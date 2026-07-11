@@ -1,13 +1,26 @@
-// POST /api/v1/transcribe — Auth: required — Body: { dumpId } — Returns: { status }
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { z } from 'zod'
+import { requireUser } from '@/middleware/auth'
+import { transcribeDump } from '@/services/transcription.service'
+import { jsonOk, toErrorResponse } from '@/lib/http'
+import { AppError } from '@/lib/errors'
 
-/**
- * POST /api/v1/transcribe — run Deepgram on a stored R2 object
- * Placeholder — implemented in Build Order Step 15.
- */
-export async function POST(): Promise<NextResponse> {
-  return NextResponse.json(
-    { error: { code: 'NOT_IMPLEMENTED', message: 'This endpoint is not available yet.' } },
-    { status: 501 },
-  )
+const bodySchema = z.object({ dumpId: z.string().uuid() })
+
+// POST /api/v1/transcribe
+// Auth: required
+// Body: { dumpId: string }
+// Returns: { status: 'processing' }
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  try {
+    const { supabase, user } = await requireUser()
+    const parsed = bodySchema.safeParse(await req.json().catch(() => ({})))
+    if (!parsed.success) {
+      throw new AppError(422, 'That request was not valid.', 'TRANSCRIBE_INVALID')
+    }
+    await transcribeDump(supabase, user.id, parsed.data.dumpId)
+    return jsonOk({ status: 'processing' })
+  } catch (error) {
+    return toErrorResponse(error)
+  }
 }

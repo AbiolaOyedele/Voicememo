@@ -1,20 +1,20 @@
 import { NextResponse } from 'next/server'
+import { requireUser } from '@/middleware/auth'
+import { listDumpsForUser } from '@/services/dumps.service'
+import { jsonOk, toErrorResponse } from '@/lib/http'
 
-// GET  /api/v1/dumps  — Auth: required — Returns: Dump[]
-// POST /api/v1/dumps  — Auth: required — Body: { duration_seconds: number } — Returns: Dump
-
-const notImplemented = (): NextResponse =>
-  NextResponse.json(
-    { error: { code: 'NOT_IMPLEMENTED', message: 'This endpoint is not available yet.' } },
-    { status: 501 },
-  )
-
-/** GET /api/v1/dumps — list the current user's dumps. Implemented in Step 17. */
+// GET /api/v1/dumps
+// Auth: required
+// Returns: Dump[] (the current user's dumps, pinned first then newest)
+//
+// Dump creation lives in POST /api/v1/upload (it needs the R2 key + duration
+// together), so this collection is read-only.
 export async function GET(): Promise<NextResponse> {
-  return notImplemented()
-}
-
-/** POST /api/v1/dumps — create a dump. Implemented in Step 17. */
-export async function POST(): Promise<NextResponse> {
-  return notImplemented()
+  try {
+    const { supabase, user } = await requireUser()
+    const dumps = await listDumpsForUser(supabase, user.id)
+    return jsonOk(dumps)
+  } catch (error) {
+    return toErrorResponse(error)
+  }
 }

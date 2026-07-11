@@ -1,13 +1,20 @@
-// POST /api/v1/upload — Auth: required — Body: { duration_seconds, content_type } — Returns: { uploadUrl, key }
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { requireUser } from '@/middleware/auth'
+import { prepareUpload } from '@/services/storage.service'
+import { jsonOk, toErrorResponse } from '@/lib/http'
 
-/**
- * POST /api/v1/upload — generate an R2 presigned upload URL (rejects >900s)
- * Placeholder — implemented in Build Order Step 14.
- */
-export async function POST(): Promise<NextResponse> {
-  return NextResponse.json(
-    { error: { code: 'NOT_IMPLEMENTED', message: 'This endpoint is not available yet.' } },
-    { status: 501 },
-  )
+// POST /api/v1/upload
+// Auth: required
+// Body: { duration_seconds: number, content_type: string }
+// Returns: { uploadUrl, key, dumpId }
+// Rejects recordings longer than 15 minutes before they reach R2/Deepgram.
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  try {
+    const { supabase, user } = await requireUser()
+    const body: unknown = await req.json().catch(() => ({}))
+    const result = await prepareUpload(supabase, user.id, body)
+    return jsonOk(result, 201)
+  } catch (error) {
+    return toErrorResponse(error)
+  }
 }

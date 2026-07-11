@@ -1,3 +1,151 @@
-// MediaRecorder wrapper: start/stop/offline queue
-// Placeholder — implemented in Build Order Step 12.
-export {}
+'use client'
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { MAX_DURATION_SECONDS } from '@/types/dump'
+import { pickAudioMimeType } from '@/utils/audio'
+
+export type RecorderState = 'idle' | 'requesting' | 'recording' | 'stopped' | 'error'
+
+export interface Recording {
+  blob: Blob
+  mimeType: string
+  durationSeconds: number
+}
+
+export interface UseRecorder {
+  state: RecorderState
+  elapsedSeconds: number
+  error: string | null
+  recording: Recording | null
+  start: () => Promise<void>
+  stop: () => void
+  reset: () => void
+}
+
+/**
+ * MediaRecorder wrapper. Handles mic permission, timing, the 15-minute hard cap
+ * (auto-stops), and produces a single audio Blob on stop. Cleans up the media
+ * stream on stop and unmount.
+ */
+export function useRecorder(): UseRecorder {
+  const [state, setState] = useState<RecorderState>('idle')
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [recording, setRecording] = useState<Recording | null>(null)
+
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const startedAtRef = useRef<number>(0)
+  const mimeRef = useRef<string>('')
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+
+  const stopStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
+  }, [])
+
+  const stop = useCallback(() => {
+    const recorder = recorderRef.current
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop()
+    }
+    clearTimer()
+  }, [clearTimer])
+
+  const start = useCallback(async () => {
+    setError(null)
+    setRecording(null)
+    setElapsedSeconds(0)
+
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setState('error')
+      setError('Recording is not supported on this device or browser.')
+      return
+    }
+
+    setState('requesting')
+    let stream: MediaStream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch {
+      setState('error')
+      setError('Microphone access was blocked. Enable it in your browser settings and try again.')
+      return
+    }
+
+    const mimeType = pickAudioMimeType()
+    let recorder: MediaRecorder
+    try {
+      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
+    } catch {
+      stream.getTracks().forEach((t) => t.stop())
+      setState('error')
+      setError('We could not start recording on this browser.')
+      return
+    }
+
+    streamRef.current = stream
+    recorderRef.current = recorder
+    chunksRef.current = []
+    mimeRef.current = recorder.mimeType || mimeType
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data)
+    }
+
+    recorder.onstop = () => {
+      const durationSeconds = Math.min(
+        MAX_DURATION_SECONDS,
+        Math.round((Date.now() - startedAtRef.current) / 1000),
+      )
+      const type = mimeRef.current || 'audio/webm'
+      const blob = new Blob(chunksRef.current, { type })
+      stopStream()
+      setRecording({ blob, mimeType: type, durationSeconds })
+      setState('stopped')
+    }
+
+    startedAtRef.current = Date.now()
+    recorder.start()
+    setState('recording')
+
+    clearTimer()
+    timerRef.current = setInterval(() => {
+      const secs = Math.round((Date.now() - startedAtRef.current) / 1000)
+      setElapsedSeconds(secs)
+      // Hard cap: auto-stop at the maximum duration.
+      if (secs >= MAX_DURATION_SECONDS) {
+        stop()
+      }
+    }, 250)
+  }, [clearTimer, stop, stopStream])
+
+  const reset = useCallback(() => {
+    clearTimer()
+    stopStream()
+    recorderRef.current = null
+    chunksRef.current = []
+    setElapsedSeconds(0)
+    setError(null)
+    setRecording(null)
+    setState('idle')
+  }, [clearTimer, stopStream])
+
+  // Cleanup on unmount.
+  useEffect(() => {
+    return () => {
+      clearTimer()
+      stopStream()
+    }
+  }, [clearTimer, stopStream])
+
+  return { state, elapsedSeconds, error, recording, start, stop, reset }
+}
