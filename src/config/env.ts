@@ -1,53 +1,41 @@
 import { z } from 'zod'
 
 /**
- * Runtime environment schema. Validated once on import so the app fails fast
- * on boot rather than deep inside a request when a secret is missing.
+ * Client-safe environment configuration: the `NEXT_PUBLIC_*` subset only.
+ * Safe to import anywhere — Client Components, Server Components, edge
+ * middleware. Validated eagerly at import.
  *
- * This module is the ONLY place allowed to read `process.env`. Every other
- * file imports the typed `env` object from here.
+ * Server-only secrets live in `env.server.ts`, which must never enter a client
+ * bundle. Together these two files are the only readers of `process.env`.
  */
-const envSchema = z.object({
-  // Supabase
+const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-
-  // Cloudflare R2 (S3-compatible)
-  R2_ACCOUNT_ID: z.string().min(1),
-  R2_ACCESS_KEY_ID: z.string().min(1),
-  R2_SECRET_ACCESS_KEY: z.string().min(1),
-  R2_BUCKET_NAME: z.string().min(1),
-
-  // Third-party AI services
-  DEEPGRAM_API_KEY: z.string().min(1),
-  ANTHROPIC_API_KEY: z.string().min(1),
-
-  // App
   NEXT_PUBLIC_SITE_URL: z.string().url(),
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 })
 
-/**
- * During `next build`, client bundles are compiled without server-only secrets
- * present. Validating the full schema at import time would crash the build.
- * We therefore skip hard validation when the build phase is active and rely on
- * runtime validation when the server actually boots.
- */
+type PublicEnv = z.infer<typeof publicSchema>
+
+/** During `next build`, absent public vars should not hard-fail the build. */
 const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build'
 
-const parsed = envSchema.safeParse(process.env)
+// `NEXT_PUBLIC_*` vars are inlined by Next; reference each statically so they
+// exist in the client bundle rather than reading `process.env` dynamically.
+const publicParsed = publicSchema.safeParse({
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+})
 
-if (!parsed.success && !isBuildPhase) {
-  console.error('❌ Invalid environment variables:', parsed.error.flatten().fieldErrors)
-  throw new Error('Environment validation failed. App cannot start.')
+if (!publicParsed.success && !isBuildPhase) {
+  console.error(
+    '❌ Invalid public environment variables:',
+    publicParsed.error.flatten().fieldErrors,
+  )
+  throw new Error('Public environment validation failed. App cannot start.')
 }
 
-/**
- * Typed, validated environment configuration.
- * Falls back to raw `process.env` values only during the build phase, where the
- * full secret set is intentionally absent.
- */
-export const env = (parsed.success ? parsed.data : (process.env as unknown)) as z.infer<
-  typeof envSchema
->
+/** Client-safe public configuration. */
+export const publicEnv = (publicParsed.success
+  ? publicParsed.data
+  : process.env) as unknown as PublicEnv

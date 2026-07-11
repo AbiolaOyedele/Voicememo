@@ -1,11 +1,7 @@
 import path from 'path'
 import type { NextConfig } from 'next'
 
-/**
- * Validate environment on server startup (skipped during the build phase, where
- * server-only secrets are intentionally absent).
- */
-import './src/config/env'
+// Server env is validated at boot via src/instrumentation.ts (register hook).
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
