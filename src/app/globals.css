@@ -1,26 +1,57 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Idea Dump design system — Tailwind v4 CSS-first tokens.
+ * Brand is intentionally monochrome: pure white canvas, pure black ink,
+ * a single neutral for secondary/disabled states. No dark mode by design.
+ */
+@theme {
+  /* Colors */
+  --color-canvas: #ffffff;
+  --color-ink: #000000;
+  --color-muted: #6b6b6b;
+
+  /* Radius — one consistent button/control radius token */
+  --radius-btn: 12px;
+  --radius-card: 16px;
+
+  /* Typography — NoirPro when its licensed files are present, else a clean fallback */
+  --font-sans:
+    var(--font-noirpro, ui-sans-serif), system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* Mobile-first PWA niceties */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+/* Utility: honor iOS safe-area insets (used by the fixed bottom tab bar). */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
