@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useRecorder } from '@/hooks/useRecorder'
 import { uploadRecording } from '@/lib/upload-client'
+import { enqueueRecording } from '@/lib/offline-queue'
 
 type SaveState = 'idle' | 'saving' | 'queued' | 'error'
 
@@ -35,8 +36,14 @@ export default function RecordPage() {
     setSaveError(null)
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      // Offline: the recording will be queued and synced later (Step 13).
-      setSaveState('queued')
+      // Offline: persist to the IndexedDB queue; it syncs when back online.
+      try {
+        await enqueueRecording(recording)
+        setSaveState('queued')
+      } catch {
+        setSaveState('error')
+        setSaveError('We could not save your recording offline. Please try again.')
+      }
       return
     }
 

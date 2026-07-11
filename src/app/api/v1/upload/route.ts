@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { requireUser } from '@/middleware/auth'
+import { enforceRateLimit, RATE_LIMITS } from '@/middleware/rate-limit'
 import { prepareUpload } from '@/services/storage.service'
 import { jsonOk, toErrorResponse } from '@/lib/http'
 
@@ -11,6 +12,7 @@ import { jsonOk, toErrorResponse } from '@/lib/http'
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const { supabase, user } = await requireUser()
+    enforceRateLimit(`${user.id}:upload`, RATE_LIMITS.paid)
     const body: unknown = await req.json().catch(() => ({}))
     const result = await prepareUpload(supabase, user.id, body)
     return jsonOk(result, 201)
