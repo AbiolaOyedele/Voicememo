@@ -41,6 +41,11 @@ yarn-error.log*
 # build output
 /dist
 
+# generated service worker (Serwist)
+/public/sw.js
+/public/sw.js.map
+/public/swe-worker-*.js
+
 # vercel
 .vercel
 
