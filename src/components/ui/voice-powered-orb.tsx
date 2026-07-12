@@ -297,13 +297,15 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     const mesh = new Mesh(gl, { geometry, program })
 
     const resize = (): void => {
-      const dpr = window.devicePixelRatio || 1
       const width = container.clientWidth
       const height = container.clientHeight
       if (width === 0 || height === 0) return
-      renderer.setSize(width * dpr, height * dpr)
-      gl.canvas.style.width = `${width}px`
-      gl.canvas.style.height = `${height}px`
+      // ogl's Renderer already applies its own `dpr` to the drawing buffer, so we
+      // pass CSS pixels here. Multiplying by devicePixelRatio again would square
+      // the buffer (size × dpr²) and, at dpr 3 on iOS Safari, blow the per-canvas
+      // WebGL memory ceiling — the context fails silently and the orb goes blank.
+      // setSize also writes the canvas CSS width/height, so no manual style needed.
+      renderer.setSize(width, height)
       const res = program.uniforms.iResolution.value as Vec3
       res.set(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height)
     }
