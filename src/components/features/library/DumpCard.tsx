@@ -53,11 +53,16 @@ export function DumpCard({ dump, onTogglePin }: DumpCardProps) {
           </button>
         </div>
 
-        <p
-          className={`line-clamp-2 text-[15px] ${isPending(dump.status) ? 'text-muted' : 'text-ink'}`}
-        >
-          {previewText(dump)}
-        </p>
+        <div className="flex flex-col gap-0.5">
+          <p
+            className={`line-clamp-1 text-[15px] font-medium ${
+              isPending(dump.status) ? 'text-muted' : 'text-ink'
+            }`}
+          >
+            {previewText(dump)}
+          </p>
+          {dump.summary ? <p className="text-muted line-clamp-2 text-sm">{dump.summary}</p> : null}
+        </div>
 
         {dump.tags.length > 0 ? (
           <div className="flex flex-wrap gap-1.5 pt-1">

@@ -55,3 +55,14 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Printing / Save-as-PDF: show only the dump content. */
+@media print {
+  nav[aria-label='Primary'],
+  [data-no-print] {
+    display: none !important;
+  }
+  body {
+    background: #ffffff;
+  }
+}

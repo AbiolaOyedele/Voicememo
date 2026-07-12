@@ -6,6 +6,7 @@ import Link from 'next/link'
 import type { Dump } from '@/types/dump'
 import { Chip } from '@/components/ui/Chip'
 import { Spinner } from '@/components/ui/Spinner'
+import { ExportActions } from '@/components/features/library/ExportActions'
 import { ChevronLeftIcon, StarIcon, TrashIcon } from '@/components/ui/icons'
 import { formatDuration } from '@/utils/audio'
 import { formatDayLabel, formatTime } from '@/utils/date'
@@ -69,7 +70,7 @@ export default function DumpDetailPage() {
           <ChevronLeftIcon size={24} />
         </Link>
         {dump ? (
-          <div className="flex items-center gap-1">
+          <div data-no-print className="flex items-center gap-1">
             <button
               type="button"
               onClick={togglePin}
@@ -154,6 +155,8 @@ export default function DumpDetailPage() {
               {dump.clean_transcript || 'Nothing here yet.'}
             </p>
           )}
+
+          {dump.status === 'ready' ? <ExportActions dump={dump} /> : null}
         </article>
       )}
     </main>

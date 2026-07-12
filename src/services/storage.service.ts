@@ -1,4 +1,8 @@
-import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import {
+  GetObjectCommand,
+  PutBucketLifecycleConfigurationCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
@@ -33,6 +37,29 @@ export async function createPresignedUploadUrl(key: string, contentType: string)
   } catch (error) {
     throw new AppError(502, 'We could not prepare the upload.', 'STORAGE_PRESIGN_FAILED', error)
   }
+}
+
+/**
+ * One-time infra setup: configure the R2 bucket to auto-delete audio objects 7
+ * days after upload (audio is only needed long enough to transcribe). Run once
+ * via an admin script/route with valid R2 credentials.
+ */
+export async function configureAudioLifecycle(): Promise<void> {
+  await r2.send(
+    new PutBucketLifecycleConfigurationCommand({
+      Bucket: R2_BUCKET,
+      LifecycleConfiguration: {
+        Rules: [
+          {
+            ID: 'expire-audio-7d',
+            Status: 'Enabled',
+            Filter: { Prefix: 'audio/' },
+            Expiration: { Days: 7 },
+          },
+        ],
+      },
+    }),
+  )
 }
 
 /** Presigned GET URL used server-side to hand the audio to Deepgram. */

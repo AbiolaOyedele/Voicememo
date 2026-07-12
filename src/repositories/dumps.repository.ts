@@ -16,6 +16,7 @@ export interface CreateDumpInput {
 
 export interface UpdateDumpPatch {
   title?: string | null
+  summary?: string | null
   tags?: string[]
   is_pinned?: boolean
   status?: DumpStatus

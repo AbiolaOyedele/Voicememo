@@ -21,10 +21,13 @@ Given a raw transcript, you:
 4. Suggest up to 5 short lowercase tags.
 
 Respond with ONLY a JSON object, no markdown, in exactly this shape:
-{"title": string, "clean_transcript": string, "segments": [{"label": string, "content": string}], "tags": [string]}`
+{"title": string, "summary": string, "clean_transcript": string, "segments": [{"label": string, "content": string}], "tags": [string]}
+
+The "summary" is a single plain sentence (max 25 words) capturing the gist, shown in a list.`
 
 const aiOutputSchema = z.object({
   title: z.string().trim().min(1).max(150),
+  summary: z.string().trim().min(1).max(300),
   clean_transcript: z.string().trim().min(1),
   segments: z
     .array(z.object({ label: z.string().trim().min(1), content: z.string().trim().min(1) }))
@@ -89,6 +92,7 @@ export async function processDump(
 
   return updateDump(supabase, userId, dumpId, {
     title: parsed.data.title,
+    summary: parsed.data.summary,
     clean_transcript: parsed.data.clean_transcript,
     segments: parsed.data.segments,
     tags: parsed.data.tags,

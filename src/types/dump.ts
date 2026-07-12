@@ -33,6 +33,7 @@ export interface Dump {
   id: string
   user_id: string
   title: string | null
+  summary: string | null
   raw_transcript: string | null
   clean_transcript: string | null
   segments: Segment[] | null
