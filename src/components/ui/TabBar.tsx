@@ -35,7 +35,7 @@ export function TabBar() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26 }}
         aria-label="Primary"
-        className="border-ink/10 bg-canvas/90 pointer-events-auto flex items-center gap-1 rounded-full border p-1.5 shadow-lg backdrop-blur"
+        className="border-ink/10 bg-canvas/90 pointer-events-auto flex items-center gap-1 rounded-full border p-1.5 backdrop-blur"
       >
         {TABS.map(({ href, label, Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`)
