@@ -63,26 +63,26 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+    <main className="font-light flex flex-1 flex-col items-center justify-center px-6 py-12">
       <motion.div
         initial={{ opacity: 0, y: 16, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="rounded-card border-ink/10 bg-canvas w-full max-w-sm border p-6 shadow-sm sm:p-7"
+        className="rounded-card bg-canvas w-full max-w-xs p-5"
       >
         {/* Header: Dumpty wordmark + description */}
         <div className="flex flex-col items-center text-center">
-          <Logo as="h1" className="text-flame text-5xl" />
-          <p className="text-muted mt-2 text-sm">
+          <Logo as="h1" className="text-4xl" />
+          <p className="text-muted mt-1.5 text-sm">
             Speak your ideas freely. Get back a clean, readable version.
           </p>
         </div>
 
         {/* Actions */}
-        <div className="mt-6 flex flex-col gap-4">
+        <div className="mt-5 flex flex-col gap-3">
           {emailStatus === 'sent' ? (
-            <div className="rounded-btn border-ink/10 bg-ink/[0.03] flex flex-col items-center gap-1 border p-5 text-center">
-              <p className="font-semibold">Check your email</p>
+            <div className="rounded-btn border-ink/10 bg-ink/[0.03] flex flex-col items-center gap-1 border p-4 text-center">
+              <p>Check your email</p>
               <p className="text-muted text-sm">
                 We sent a sign-in link to <span className="text-ink">{email.trim()}</span>.
               </p>
@@ -98,7 +98,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 aria-label="Email address"
-                className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink h-12 w-full border bg-transparent px-4 text-[15px] outline-none"
+                className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink h-11 w-full border bg-transparent px-4 text-[15px] outline-none"
               />
               <motion.button
                 type="submit"
@@ -106,7 +106,7 @@ export default function LoginPage() {
                 whileTap={{ scale: 0.98 }}
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.15 }}
-                className="rounded-btn bg-flame flex h-12 min-h-11 w-full items-center justify-center gap-2 px-5 font-medium text-white transition-opacity disabled:opacity-60"
+                className="rounded-btn bg-flame flex h-11 min-h-11 w-full items-center justify-center gap-2 px-5 text-white transition-opacity disabled:opacity-60"
               >
                 <MailMark />
                 {emailStatus === 'sending' ? 'Sending…' : 'Continue with Email'}
@@ -128,7 +128,7 @@ export default function LoginPage() {
             whileTap={{ scale: 0.98 }}
             whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.15 }}
-            className="rounded-btn border-ink/15 text-ink hover:bg-ink/[0.04] flex h-12 min-h-11 w-full items-center justify-center gap-3 border px-5 font-medium transition-colors disabled:opacity-60"
+            className="rounded-btn border-ink/15 text-ink hover:bg-ink/[0.04] flex h-11 min-h-11 w-full items-center justify-center gap-3 border px-5 transition-colors disabled:opacity-60"
           >
             <GoogleMark />
             {googleStatus === 'redirecting' ? 'Opening Google…' : 'Continue with Google'}
@@ -139,31 +139,20 @@ export default function LoginPage() {
               {error}
             </p>
           ) : null}
-
-          {/* Skip → guest */}
-          <motion.button
-            type="button"
-            onClick={continueAsGuest}
-            whileTap={{ scale: 0.98 }}
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.15 }}
-            className="rounded-btn border-ink/15 text-muted hover:text-ink hover:bg-ink/[0.04] flex h-12 min-h-11 w-full items-center justify-center border px-5 font-medium transition-colors"
-          >
-            Continue as a guest
-          </motion.button>
         </div>
       </motion.div>
 
-      {/* Footer */}
-      <motion.p
+      {/* Skip → guest */}
+      <motion.button
+        type="button"
+        onClick={continueAsGuest}
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-        className="text-muted mt-6 w-full max-w-sm px-6 text-center text-xs"
+        className="text-muted hover:text-ink mt-5 min-h-11 text-sm underline underline-offset-4 transition-colors"
       >
-        Guest notes stay on this device, up to 5 minutes each. By continuing you agree to our Terms
-        and Privacy Policy.
-      </motion.p>
+        Continue as a guest
+      </motion.button>
     </main>
   )
 }

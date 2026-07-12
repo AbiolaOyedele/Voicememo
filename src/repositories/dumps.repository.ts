@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Dump, DumpStatus, Segment } from '@/types/dump'
+import type { ActionPlan, Dump, DumpStatus, Segment } from '@/types/dump'
 import { AppError } from '@/lib/errors'
 
 /**
@@ -27,6 +27,7 @@ export interface UpdateDumpPatch {
   raw_transcript?: string | null
   clean_transcript?: string | null
   segments?: Segment[] | null
+  action_plan?: ActionPlan | null
   r2_audio_key?: string | null
 }
 

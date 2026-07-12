@@ -4,11 +4,19 @@ import withSerwistInit from '@serwist/next'
 
 // Server env is validated at boot via src/instrumentation.ts (register hook).
 
+// Commit SHA of this build (Vercel sets VERCEL_GIT_COMMIT_SHA). Inlined into
+// the client bundle so a running tab can detect when a newer deploy is live —
+// see src/hooks/useUpdatePrompt.ts.
+const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA || 'dev'
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Pin the file-tracing root to this project. A stray lockfile in the home
   // directory otherwise makes Next infer the wrong workspace root.
   outputFileTracingRoot: path.join(__dirname),
+  env: {
+    NEXT_PUBLIC_BUILD_ID: BUILD_ID,
+  },
 }
 
 // PWA via Serwist (maintained successor to next-pwa). Disabled in dev to avoid

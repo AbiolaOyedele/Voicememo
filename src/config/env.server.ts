@@ -32,6 +32,11 @@ const serverSchema = z.object({
   // App
   NEXT_PUBLIC_SITE_URL: z.string().url(),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+
+  // Deploy-freshness detection — Vercel sets this automatically. Read at
+  // request time (never cached) so /api/v1/version always reports the live
+  // deploy, unlike NEXT_PUBLIC_BUILD_ID which is baked in at build time.
+  VERCEL_GIT_COMMIT_SHA: z.string().optional(),
 })
 
 type ServerEnv = z.infer<typeof serverSchema>

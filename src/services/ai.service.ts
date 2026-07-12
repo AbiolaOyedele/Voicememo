@@ -4,6 +4,7 @@ import { z } from 'zod'
 import type { Dump } from '@/types/dump'
 import { claude, CLAUDE_MODEL } from '@/lib/claude'
 import { getDumpById, updateDump } from '@/repositories/dumps.repository'
+import { extractJson } from '@/utils/json'
 import { AppError } from '@/lib/errors'
 import { logger } from '@/lib/logger'
 
@@ -34,18 +35,6 @@ const aiOutputSchema = z.object({
     .default([]),
   tags: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
 })
-
-/** Extract the first balanced JSON object from a model response. */
-function extractJson(text: string): unknown {
-  const start = text.indexOf('{')
-  const end = text.lastIndexOf('}')
-  if (start === -1 || end === -1 || end <= start) return null
-  try {
-    return JSON.parse(text.slice(start, end + 1))
-  } catch {
-    return null
-  }
-}
 
 export async function processDump(
   supabase: SupabaseClient,

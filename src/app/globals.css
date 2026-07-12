@@ -33,6 +33,11 @@ body {
   background-color: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  /* Only NoirPro Light (300) is shipped — pin it and refuse the browser's
+     faux-bold/italic synthesis so a stray font-bold/italic class can't fake a
+     weight or slant we don't actually have. */
+  font-weight: 300;
+  font-synthesis: none;
   /* Mobile-first PWA niceties */
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;

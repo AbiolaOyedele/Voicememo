@@ -15,7 +15,7 @@ export const Logo: FC<LogoProps> = ({ className, as = 'span' }) => {
   const Tag = as
   return (
     <Tag
-      className={cn('font-logo leading-none tracking-tight', className)}
+      className={cn('font-logo text-flame leading-none tracking-tight', className)}
       style={{ fontFamily: 'var(--font-logo)' }}
     >
       Dumpty

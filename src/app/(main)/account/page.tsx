@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { getOptionalUser } from '@/middleware/auth'
 import { SignOutButton } from '@/components/features/account/SignOutButton'
+import { ChangelogSection } from '@/components/features/account/ChangelogSection'
+import { Reveal } from '@/components/ui/Reveal'
 
 /** Read a string field from Supabase user metadata safely. */
 function metaString(meta: Record<string, unknown> | undefined, key: string): string | null {
@@ -14,16 +16,21 @@ export default async function AccountPage() {
   if (!user) {
     return (
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 pt-6">
-        <h1 className="px-1 text-2xl font-bold tracking-tight">Account</h1>
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
+        <Reveal>
+          <h1 className="px-1 text-2xl tracking-tight">Account</h1>
+        </Reveal>
+        <Reveal delay={0.05} className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="text-muted text-sm">You are browsing as a guest.</p>
           <Link
             href="/login"
-            className="rounded-btn bg-flame inline-flex h-11 items-center px-5 font-medium text-white"
+            className="rounded-btn bg-flame inline-flex h-11 items-center px-5 text-white"
           >
             Sign in
           </Link>
-        </div>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <ChangelogSection />
+        </Reveal>
       </main>
     )
   }
@@ -34,28 +41,40 @@ export default async function AccountPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-4 pt-6">
-      <h1 className="px-1 text-2xl font-bold tracking-tight">Account</h1>
+      <Reveal>
+        <h1 className="px-1 text-2xl tracking-tight">Account</h1>
+      </Reveal>
 
-      <section className="flex items-center gap-4">
-        <div className="bg-ink text-canvas flex h-14 w-14 items-center justify-center rounded-full text-xl font-semibold">
-          {initial}
-        </div>
-        <div className="flex flex-col">
-          {name ? <span className="text-lg font-semibold">{name}</span> : null}
-          {email ? <span className="text-muted text-sm">{email}</span> : null}
-        </div>
-      </section>
+      <Reveal delay={0.05}>
+        <section className="flex items-center gap-4">
+          <div className="bg-ink text-canvas flex h-14 w-14 items-center justify-center rounded-full text-xl">
+            {initial}
+          </div>
+          <div className="flex flex-col">
+            {name ? <span className="text-lg">{name}</span> : null}
+            {email ? <span className="text-muted text-sm">{email}</span> : null}
+          </div>
+        </section>
+      </Reveal>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-muted px-1 text-xs font-semibold tracking-wide uppercase">Settings</h2>
-        <ul className="rounded-card divide-ink/10 border-ink/10 divide-y border">
-          <SettingRow label="Notifications" hint="Coming soon" />
-          <SettingRow label="Export your data" hint="Coming soon" />
-          <SettingRow label="Delete account" hint="Coming soon" destructive />
-        </ul>
-      </section>
+      <Reveal delay={0.1}>
+        <section className="flex flex-col gap-2">
+          <h2 className="text-muted px-1 text-xs tracking-wide uppercase">Settings</h2>
+          <ul className="rounded-card divide-ink/10 border-ink/10 divide-y border">
+            <SettingRow label="Notifications" hint="Coming soon" />
+            <SettingRow label="Export your data" hint="Coming soon" />
+            <SettingRow label="Delete account" hint="Coming soon" destructive />
+          </ul>
+        </section>
+      </Reveal>
 
-      <SignOutButton />
+      <Reveal delay={0.15}>
+        <ChangelogSection />
+      </Reveal>
+
+      <Reveal delay={0.2}>
+        <SignOutButton />
+      </Reveal>
     </main>
   )
 }

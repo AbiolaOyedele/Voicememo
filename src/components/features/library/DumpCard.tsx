@@ -11,6 +11,7 @@ import { formatTime } from '@/utils/date'
 interface DumpCardProps {
   dump: Dump
   onTogglePin: (dump: Dump) => void
+  index?: number
 }
 
 /** Preview line for a card: title, else first line of clean text, else status. */
@@ -24,9 +25,18 @@ function previewText(dump: Dump): string {
 
 const isPending = (s: Dump['status']) => s !== 'ready' && s !== 'failed'
 
-export function DumpCard({ dump, onTogglePin }: DumpCardProps) {
+export function DumpCard({ dump, onTogglePin, index = 0 }: DumpCardProps) {
   return (
-    <motion.div whileTap={{ scale: 0.99 }} transition={{ duration: 0.12 }}>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileTap={{ scale: 0.99 }}
+      transition={{
+        opacity: { duration: 0.3, delay: Math.min(index, 8) * 0.035 },
+        y: { duration: 0.3, delay: Math.min(index, 8) * 0.035 },
+        scale: { duration: 0.12 },
+      }}
+    >
       <Link
         href={`/library/${dump.id}`}
         className="rounded-card border-ink/10 bg-canvas flex flex-col gap-2 border p-4"
@@ -55,7 +65,7 @@ export function DumpCard({ dump, onTogglePin }: DumpCardProps) {
 
         <div className="flex flex-col gap-0.5">
           <p
-            className={`line-clamp-1 text-[15px] font-medium ${
+            className={`line-clamp-1 text-[15px] ${
               isPending(dump.status) ? 'text-muted' : 'text-ink'
             }`}
           >

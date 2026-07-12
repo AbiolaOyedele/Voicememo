@@ -22,7 +22,7 @@ export function ExportActions({ dump }: { dump: Dump }) {
   }
 
   const btn =
-    'rounded-btn border border-ink/10 px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-ink/[0.04]'
+    'rounded-btn border border-ink/10 px-3 py-2 text-sm text-ink transition-colors hover:bg-ink/[0.04]'
 
   return (
     <div data-no-print className="border-ink/10 flex flex-wrap gap-2 border-t pt-4">

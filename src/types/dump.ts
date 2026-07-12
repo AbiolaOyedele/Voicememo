@@ -25,6 +25,19 @@ export interface Segment {
 /** A free-text tag on a dump. */
 export type Tag = string
 
+/** One checklist item in an action plan. */
+export interface ActionPlanItem {
+  id: string
+  text: string
+  done: boolean
+}
+
+/** A generated action-plan checklist for a dump, created on demand. */
+export interface ActionPlan {
+  items: ActionPlanItem[]
+  generated_at: string
+}
+
 /** Maximum recording length in seconds (15 minutes), enforced client- and server-side. */
 export const MAX_DURATION_SECONDS = 900
 
@@ -38,6 +51,7 @@ export interface Dump {
   clean_transcript: string | null
   segments: Segment[] | null
   tags: Tag[]
+  action_plan: ActionPlan | null
   r2_audio_key: string | null
   duration_seconds: number
   is_pinned: boolean

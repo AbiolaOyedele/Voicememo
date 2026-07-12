@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { Dump } from '@/types/dump'
+import { AnimatePresence, motion } from 'framer-motion'
+import type { ActionPlan, Dump } from '@/types/dump'
 import { Chip } from '@/components/ui/Chip'
 import { Spinner } from '@/components/ui/Spinner'
+import { Button } from '@/components/ui/Button'
 import { ExportActions } from '@/components/features/library/ExportActions'
-import { ChevronLeftIcon, StarIcon, TrashIcon } from '@/components/ui/icons'
+import { ChevronDownIcon, ChevronLeftIcon, StarIcon, TrashIcon } from '@/components/ui/icons'
 import { formatDuration } from '@/utils/audio'
 import { formatDayLabel, formatTime } from '@/utils/date'
 
@@ -103,14 +105,14 @@ export default function DumpDetailPage() {
       ) : error || !dump ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-24 text-center">
           <p className="text-muted text-sm">{error ?? 'Idea not found.'}</p>
-          <Link href="/library" className="text-sm font-medium underline">
+          <Link href="/library" className="text-sm underline">
             Back to library
           </Link>
         </div>
       ) : (
         <article className="flex flex-col gap-4 pt-2">
           <header className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-2xl tracking-tight">
               {dump.title ?? (dump.status === 'ready' ? 'Untitled idea' : 'Processing…')}
             </h1>
             <p className="text-muted text-xs">
@@ -141,9 +143,7 @@ export default function DumpDetailPage() {
             <div className="flex flex-col gap-5">
               {dump.segments.map((seg, i) => (
                 <section key={i} className="flex flex-col gap-1.5">
-                  <h2 className="text-muted text-xs font-semibold tracking-wide uppercase">
-                    {seg.label}
-                  </h2>
+                  <h2 className="text-muted text-xs tracking-wide uppercase">{seg.label}</h2>
                   <p className="text-ink text-[15px] leading-relaxed whitespace-pre-wrap">
                     {seg.content}
                   </p>
@@ -156,6 +156,7 @@ export default function DumpDetailPage() {
             </p>
           )}
 
+          {dump.status === 'ready' ? <ActionPlanSection dump={dump} onUpdate={setDump} /> : null}
           {dump.status === 'ready' ? <ExportActions dump={dump} /> : null}
         </article>
       )}
@@ -180,13 +181,152 @@ function DetailToggle({
           key={v}
           type="button"
           onClick={() => onChange(v)}
-          className={`rounded-[8px] px-3 py-1 font-medium capitalize transition-colors ${
+          className={`rounded-[8px] px-3 py-1 capitalize transition-colors ${
             view === v ? 'bg-flame text-white' : 'text-muted'
           }`}
         >
           {v === 'clean' ? 'Clean' : 'Raw'}
         </button>
       ))}
+    </div>
+  )
+}
+
+/**
+ * Action plan: generated on demand (not part of the initial transcript
+ * processing) from the dump's cleaned transcript, so most ideas never pay for
+ * the extra Claude call. Hidden behind a collapsed toggle until the user
+ * chooses to view it, even after it's been generated.
+ */
+function ActionPlanSection({
+  dump,
+  onUpdate,
+}: {
+  dump: Dump
+  onUpdate: (dump: Dump) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function generate(): Promise<void> {
+    setGenerating(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/v1/dumps/${dump.id}/action-plan`, { method: 'POST' })
+      const json = (await res.json().catch(() => null)) as {
+        data?: Dump
+        error?: { message?: string }
+      } | null
+      if (!res.ok || !json?.data) throw new Error(json?.error?.message ?? 'Failed')
+      onUpdate(json.data)
+      setExpanded(true)
+    } catch {
+      setError('We could not create an action plan. Try again.')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function toggleItem(itemId: string): Promise<void> {
+    if (!dump.action_plan) return
+    const previous = dump.action_plan
+    const next: ActionPlan = {
+      ...previous,
+      items: previous.items.map((item) =>
+        item.id === itemId ? { ...item, done: !item.done } : item,
+      ),
+    }
+    onUpdate({ ...dump, action_plan: next })
+    try {
+      const res = await fetch(`/api/v1/dumps/${dump.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action_plan: next }),
+      })
+      if (!res.ok) throw new Error('failed')
+    } catch {
+      onUpdate({ ...dump, action_plan: previous })
+    }
+  }
+
+  if (!dump.action_plan) {
+    return (
+      <div data-no-print className="border-ink/10 flex flex-col gap-2 border-t pt-4">
+        <Button variant="secondary" size="md" onClick={generate} loading={generating}>
+          Create action plan
+        </Button>
+        {error ? (
+          <p role="alert" className="text-muted text-sm">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <div data-no-print className="border-ink/10 flex flex-col gap-2 border-t pt-4">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="flex min-h-11 items-center justify-between text-left text-[15px]"
+      >
+        Action plan
+        <motion.span
+          animate={{ rotate: expanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="text-muted"
+        >
+          <ChevronDownIcon size={18} />
+        </motion.span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {expanded ? (
+          <motion.div
+            key="items"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <ul className="flex flex-col pb-1">
+              {dump.action_plan.items.map((item) => (
+                <li key={item.id}>
+                  <label className="flex min-h-11 cursor-pointer items-center gap-3 py-1">
+                    <input
+                      type="checkbox"
+                      checked={item.done}
+                      onChange={() => void toggleItem(item.id)}
+                      className="accent-flame h-5 w-5 shrink-0"
+                    />
+                    <span className={`text-[15px] ${item.done ? 'text-muted line-through' : ''}`}>
+                      {item.text}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => void generate()}
+              disabled={generating}
+              className="text-muted hover:text-ink min-h-11 self-start text-xs underline underline-offset-4 disabled:opacity-60"
+            >
+              {generating ? 'Regenerating…' : 'Regenerate'}
+            </button>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      {error ? (
+        <p role="alert" className="text-muted text-sm">
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }

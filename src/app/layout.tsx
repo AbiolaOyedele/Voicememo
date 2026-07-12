@@ -24,6 +24,11 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  // Keeps `position: fixed` elements (the TabBar) anchored to the true layout
+  // viewport when the on-screen keyboard opens — e.g. the Library search
+  // input — instead of the browser resizing only the visual viewport and
+  // leaving fixed elements pinned behind the keyboard.
+  interactiveWidget: 'resizes-content',
 }
 
 export default function RootLayout({

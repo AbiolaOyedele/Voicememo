@@ -48,7 +48,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.15 }}
       disabled={disabled || loading}
-      className={`rounded-btn inline-flex min-h-11 items-center justify-center gap-2 font-medium transition-opacity disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
+      className={`rounded-btn inline-flex min-h-11 items-center justify-center gap-2 transition-opacity disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
       {...props}
     >
       {loading ? <Spinner size={18} /> : children}

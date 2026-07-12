@@ -64,7 +64,7 @@ export function TabBar() {
                   width: { type: 'spring', stiffness: 350, damping: 32 },
                   opacity: { duration: 0.18 },
                 }}
-                className="overflow-hidden text-sm font-medium whitespace-nowrap"
+                className="overflow-hidden text-sm whitespace-nowrap"
               >
                 {label}
               </motion.span>

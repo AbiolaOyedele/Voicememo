@@ -16,11 +16,25 @@ import {
  * expected failures.
  */
 
+const actionPlanItemSchema = z.object({
+  id: z.string().min(1),
+  text: z.string().trim().min(1).max(280),
+  done: z.boolean(),
+})
+
+const actionPlanSchema = z.object({
+  items: z.array(actionPlanItemSchema).max(20),
+  generated_at: z.string(),
+})
+
 const updateSchema = z
   .object({
     title: z.string().trim().max(150).nullable().optional(),
     tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
     is_pinned: z.boolean().optional(),
+    // Whole-object replace (e.g. toggling a checklist item's `done` state) —
+    // the client sends the full updated plan back, same as `tags`.
+    action_plan: actionPlanSchema.nullable().optional(),
   })
   .strict()
 
@@ -65,6 +79,7 @@ export async function updateDumpForUser(
   if (parsed.data.title !== undefined) patch.title = parsed.data.title
   if (parsed.data.tags !== undefined) patch.tags = parsed.data.tags
   if (parsed.data.is_pinned !== undefined) patch.is_pinned = parsed.data.is_pinned
+  if (parsed.data.action_plan !== undefined) patch.action_plan = parsed.data.action_plan
 
   if (Object.keys(patch).length === 0) {
     return getDumpForUser(supabase, userId, id)

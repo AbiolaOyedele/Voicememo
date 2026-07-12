@@ -22,10 +22,10 @@ export function DumpList({ dumps, onTogglePin }: DumpListProps) {
     <div className="flex flex-col gap-6">
       {pinned.length > 0 ? (
         <section className="flex flex-col gap-2">
-          <h2 className="text-muted px-1 text-xs font-semibold tracking-wide uppercase">Pinned</h2>
+          <h2 className="text-muted px-1 text-xs tracking-wide uppercase">Pinned</h2>
           <div className="flex flex-col gap-2">
-            {pinned.map((dump) => (
-              <DumpCard key={dump.id} dump={dump} onTogglePin={onTogglePin} />
+            {pinned.map((dump, i) => (
+              <DumpCard key={dump.id} dump={dump} onTogglePin={onTogglePin} index={i} />
             ))}
           </div>
         </section>
@@ -33,12 +33,10 @@ export function DumpList({ dumps, onTogglePin }: DumpListProps) {
 
       {groups.map((group) => (
         <section key={group.label} className="flex flex-col gap-2">
-          <h2 className="text-muted px-1 text-xs font-semibold tracking-wide uppercase">
-            {group.label}
-          </h2>
+          <h2 className="text-muted px-1 text-xs tracking-wide uppercase">{group.label}</h2>
           <div className="flex flex-col gap-2">
-            {group.items.map((dump) => (
-              <DumpCard key={dump.id} dump={dump} onTogglePin={onTogglePin} />
+            {group.items.map((dump, i) => (
+              <DumpCard key={dump.id} dump={dump} onTogglePin={onTogglePin} index={i} />
             ))}
           </div>
         </section>

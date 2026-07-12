@@ -153,13 +153,13 @@ export default function RecordPage() {
 
       <header className="text-center">
         {isRecording ? (
-          <h1 className="text-2xl font-bold tracking-tight">Recording</h1>
+          <h1 className="text-2xl tracking-tight">Recording</h1>
         ) : (
           <Logo as="h1" className="text-5xl" />
         )}
         <p className="text-muted mt-1 text-sm">
           {isRecording
-            ? 'Say whatever is on your mind.'
+            ? 'Say whatever is on your mind. Tap the orb when you are done.'
             : showStopped
               ? 'Save it, or record again.'
               : 'Tap the orb to speak your idea freely.'}

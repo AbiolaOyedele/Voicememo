@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import type { Dump } from '@/types/dump'
 import { useDumps } from '@/hooks/useDumps'
 import { isGuest } from '@/lib/guest'
@@ -10,6 +11,8 @@ import { GuestLibrary } from '@/components/features/library/GuestLibrary'
 import { SearchBar } from '@/components/features/library/SearchBar'
 import { Chip } from '@/components/ui/Chip'
 import { Button } from '@/components/ui/Button'
+import { PullToRefresh } from '@/components/ui/PullToRefresh'
+import { Reveal } from '@/components/ui/Reveal'
 
 /** Routes guests to the local library and signed-in users to the synced one. */
 export default function LibraryPage() {
@@ -65,40 +68,53 @@ function SignedInLibrary() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-6">
-      <h1 className="px-1 text-2xl font-bold tracking-tight">Library</h1>
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-6">
+      <PullToRefresh onRefresh={refetch}>
+        <div className="flex flex-col gap-4">
+          <Reveal>
+            <h1 className="px-1 text-2xl tracking-tight">Library</h1>
+          </Reveal>
 
-      <SearchBar value={query} onChange={setQuery} />
+          <Reveal delay={0.04}>
+            <SearchBar value={query} onChange={setQuery} />
+          </Reveal>
 
-      {allTags.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          <Chip active={activeTag === null} onClick={() => setActiveTag(null)}>
-            All
-          </Chip>
-          {allTags.map((tag) => (
-            <Chip key={tag} active={activeTag === tag} onClick={() => setActiveTag(tag)}>
-              {tag}
-            </Chip>
-          ))}
+          {allTags.length > 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-wrap gap-1.5"
+            >
+              <Chip active={activeTag === null} onClick={() => setActiveTag(null)}>
+                All
+              </Chip>
+              {allTags.map((tag) => (
+                <Chip key={tag} active={activeTag === tag} onClick={() => setActiveTag(tag)}>
+                  {tag}
+                </Chip>
+              ))}
+            </motion.div>
+          ) : null}
+
+          {loading ? (
+            <LibrarySkeleton />
+          ) : error ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <p className="text-muted text-sm">{error}</p>
+              <Button variant="secondary" size="md" onClick={() => void refetch()}>
+                Try again
+              </Button>
+            </div>
+          ) : dumps.length === 0 ? (
+            <EmptyState />
+          ) : filtered.length === 0 ? (
+            <p className="text-muted py-16 text-center text-sm">No ideas match your search.</p>
+          ) : (
+            <DumpList dumps={filtered} onTogglePin={togglePin} />
+          )}
         </div>
-      ) : null}
-
-      {loading ? (
-        <LibrarySkeleton />
-      ) : error ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center">
-          <p className="text-muted text-sm">{error}</p>
-          <Button variant="secondary" size="md" onClick={() => void refetch()}>
-            Try again
-          </Button>
-        </div>
-      ) : dumps.length === 0 ? (
-        <EmptyState />
-      ) : filtered.length === 0 ? (
-        <p className="text-muted py-16 text-center text-sm">No ideas match your search.</p>
-      ) : (
-        <DumpList dumps={filtered} onTogglePin={togglePin} />
-      )}
+      </PullToRefresh>
     </main>
   )
 }
@@ -118,17 +134,22 @@ function LibrarySkeleton() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center gap-3 py-20 text-center">
-      <p className="text-lg font-semibold">No ideas yet</p>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="flex flex-col items-center gap-3 py-20 text-center"
+    >
+      <p className="text-lg">No ideas yet</p>
       <p className="text-muted max-w-xs text-sm">
         Tap Record to capture your first idea. Your clean, segmented version shows up here.
       </p>
       <Link
         href="/record"
-        className="rounded-btn bg-flame mt-2 inline-flex h-11 items-center px-5 font-medium text-white"
+        className="rounded-btn bg-flame mt-2 inline-flex h-11 items-center px-5 text-white"
       >
         Record an idea
       </Link>
-    </div>
+    </motion.div>
   )
 }

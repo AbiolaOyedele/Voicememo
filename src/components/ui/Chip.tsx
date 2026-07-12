@@ -15,7 +15,7 @@ interface ChipProps {
  */
 export function Chip({ children, active = false, onClick, className = '' }: ChipProps) {
   const base =
-    'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors'
+    'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs transition-colors'
   const tone = active ? 'bg-flame text-white' : 'bg-ink/5 text-ink'
 
   if (onClick) {
