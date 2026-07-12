@@ -29,13 +29,13 @@ export function TabBar() {
   const router = useRouter()
 
   return (
-    <div className="pb-safe pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-4">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1.75rem)]">
       <motion.nav
         initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26 }}
         aria-label="Primary"
-        className="border-ink/10 bg-canvas/90 pointer-events-auto flex items-center gap-1 rounded-full border p-1.5 backdrop-blur"
+        className="border-ink/10 bg-canvas pointer-events-auto flex items-center gap-1 rounded-full border p-1.5"
       >
         {TABS.map(({ href, label, Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`)
