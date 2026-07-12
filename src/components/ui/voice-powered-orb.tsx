@@ -88,9 +88,11 @@ const FRAG = /* glsl */ `
     return vec4(colorIn.rgb / (a + 1e-5), a);
   }
 
-  const vec3 baseColor1 = vec3(0.400000, 0.400000, 0.400000);
-  const vec3 baseColor2 = vec3(0.850000, 0.850000, 0.850000);
-  const vec3 baseColor3 = vec3(0.250000, 0.250000, 0.250000);
+  // Brand flame (#FF4F03) and warm shades. A glow shader needs saturated colour to
+  // read on white — mid-grey was near-invisible; the orange rim shows clearly.
+  const vec3 baseColor1 = vec3(1.000000, 0.309804, 0.011765);
+  const vec3 baseColor2 = vec3(1.000000, 0.627451, 0.301961);
+  const vec3 baseColor3 = vec3(0.615686, 0.145098, 0.000000);
   const float innerRadius = 0.6;
   const float noiseScale = 0.65;
 

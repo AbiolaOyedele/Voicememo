@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
 import { enableGuest } from '@/lib/guest'
+import { Logo } from '@/components/ui/Logo'
 
 /**
  * Sign-in screen. Email magic link (works with the enabled email provider) plus
@@ -69,19 +70,10 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className="rounded-card border-ink/10 bg-canvas w-full max-w-sm border p-6 shadow-sm sm:p-7"
       >
-        {/* Header: logo tile + title + description */}
+        {/* Header: Dumpty wordmark + description */}
         <div className="flex flex-col items-center text-center">
-          <div className="bg-ink mb-4 flex h-16 w-16 items-center justify-center rounded-2xl">
-            <span
-              className="text-canvas text-4xl leading-none"
-              style={{ fontFamily: 'var(--font-logo)' }}
-              aria-hidden
-            >
-              D
-            </span>
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome to Dumpty</h1>
-          <p className="text-muted mt-1.5 text-sm">
+          <Logo as="h1" className="text-5xl" />
+          <p className="text-muted mt-2 text-sm">
             Speak your ideas freely. Get back a clean, readable version.
           </p>
         </div>

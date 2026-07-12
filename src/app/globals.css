@@ -10,6 +10,8 @@
   --color-canvas: #ffffff;
   --color-ink: #000000;
   --color-muted: #6b6b6b;
+  /* Brand accent — the one vivid colour in an otherwise monochrome UI. */
+  --color-flame: #ff4f03;
 
   /* Radius — one consistent button/control radius token */
   --radius-btn: 12px;
