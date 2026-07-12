@@ -22,11 +22,21 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return json.data
 }
 
-export async function uploadRecording(recording: Recording): Promise<string> {
+/**
+ * Upload a recording and run the transcription + AI pipeline, reporting coarse
+ * progress (0–100) at each stage boundary so the UI can drive a progress loader:
+ * ~10 requested an upload URL, ~40 audio uploaded, ~70 transcribed, 100 cleaned.
+ */
+export async function uploadRecording(
+  recording: Recording,
+  onProgress?: (value: number) => void,
+): Promise<string> {
+  onProgress?.(5)
   const { uploadUrl, dumpId } = await postJson<CreateUploadResponse>('/api/v1/upload', {
     duration_seconds: recording.durationSeconds,
     content_type: recording.mimeType,
   })
+  onProgress?.(10)
 
   const put = await fetch(uploadUrl, {
     method: 'PUT',
@@ -34,8 +44,12 @@ export async function uploadRecording(recording: Recording): Promise<string> {
     body: recording.blob,
   })
   if (!put.ok) throw new Error('Audio upload failed')
+  onProgress?.(40)
 
   await postJson('/api/v1/transcribe', { dumpId })
+  onProgress?.(70)
+
   await postJson('/api/v1/process', { dumpId })
+  onProgress?.(100)
   return dumpId
 }

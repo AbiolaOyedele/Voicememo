@@ -9,6 +9,10 @@ import { Timer } from '@/components/features/record/Timer'
 import { QueuedIndicator } from '@/components/features/record/QueuedIndicator'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
+import {
+  ProgressiveFluxLoader,
+  type ProgressiveFluxPhase,
+} from '@/components/ui/progressive-flux-loader'
 import { useRecorder } from '@/hooks/useRecorder'
 import { uploadRecording } from '@/lib/upload-client'
 import { enqueueRecording } from '@/lib/offline-queue'
@@ -16,6 +20,18 @@ import { MAX_DURATION_SECONDS } from '@/types/dump'
 import { isGuest, saveGuestDump, GUEST_MAX_DURATION_SECONDS } from '@/lib/guest'
 
 type SaveState = 'idle' | 'saving' | 'queued' | 'error'
+
+/** Phase labels for the transcription pipeline, keyed to upload-client progress. */
+const PROCESSING_PHASES: ProgressiveFluxPhase[] = [
+  { at: 0, label: 'Uploading' },
+  { at: 40, label: 'Transcribing' },
+  { at: 70, label: 'Cleaning up' },
+  { at: 100, label: 'All done' },
+]
+
+// While a stage is in flight the reported value holds steady, so we creep toward
+// the next stage's ceiling to keep the bar alive without ever faking completion.
+const STAGE_CEILINGS = [38, 68, 98]
 
 export default function RecordPage() {
   const router = useRouter()
@@ -26,6 +42,23 @@ export default function RecordPage() {
     useRecorder(maxDuration)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [processing, setProcessing] = useState(false)
+  const [progress, setProgress] = useState(0)
+
+  // Gentle in-stage creep: nudge progress toward the current stage's ceiling
+  // while we await the server, so the bar never sits frozen during a long step.
+  useEffect(() => {
+    if (!processing) return
+    const id = setInterval(() => {
+      setProgress((p) => {
+        if (p >= 100) return p
+        const ceiling = STAGE_CEILINGS.find((c) => c > p)
+        if (ceiling === undefined) return p
+        return Math.min(ceiling, p + 0.4)
+      })
+    }, 120)
+    return () => clearInterval(id)
+  }, [processing])
 
   const audioUrl = useMemo(
     () => (recording ? URL.createObjectURL(recording.blob) : null),
@@ -68,12 +101,22 @@ export default function RecordPage() {
     }
 
     setSaveState('saving')
+    setProgress(0)
+    setProcessing(true)
     try {
-      await uploadRecording(recording)
+      await uploadRecording(recording, (value) => {
+        // Only ever move forward — never let a stage report undo the creep.
+        setProgress((p) => Math.max(p, value))
+      })
+      setProgress(100)
+      // Brief beat so "All done" is seen before we leave.
+      await new Promise((r) => setTimeout(r, 650))
       reset()
+      setProcessing(false)
       setSaveState('idle')
       router.push('/library')
     } catch {
+      setProcessing(false)
       setSaveState('error')
       setSaveError('We could not save your recording. Check your connection and try again.')
     }
@@ -91,6 +134,21 @@ export default function RecordPage() {
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-10">
+      <AnimatePresence>
+        {processing ? (
+          <motion.div
+            key="processing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-canvas fixed inset-0 z-[90] flex flex-col items-center justify-center px-6"
+          >
+            <ProgressiveFluxLoader value={progress} phases={PROCESSING_PHASES} />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
       <header className="text-center">
         {isRecording ? (
           <h1 className="text-2xl font-bold tracking-tight">Recording</h1>
