@@ -49,5 +49,12 @@ export function useDumps(): UseDumps {
     void load()
   }, [load])
 
+  // Refetch when guest notes finish migrating into the account.
+  useEffect(() => {
+    const onUpdated = (): void => void load()
+    window.addEventListener('dumpty:dumps-updated', onUpdated)
+    return () => window.removeEventListener('dumpty:dumps-updated', onUpdated)
+  }, [load])
+
   return { dumps, loading, error, refetch: load, setDumps }
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { listGuestDumps, deleteGuestDump, type GuestDump } from '@/lib/guest'
 
 function formatDuration(seconds: number): string {
@@ -69,9 +70,24 @@ export function GuestLibrary() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 pt-6">
       <h1 className="px-1 text-2xl font-bold tracking-tight">Library</h1>
-      <p className="text-muted px-1 text-sm">
-        You&apos;re a guest — these notes are saved on this device only. Sign in to get transcripts,
-        AI cleanup, and sync across devices.
+
+      <div className="rounded-card border-ink/10 flex flex-col gap-3 border p-4">
+        <p className="text-sm">
+          You&apos;re a guest — these notes live on this device only. Create a free account to keep
+          them: they&apos;ll be transcribed, cleaned up, and synced to your library.
+        </p>
+        <Link href="/login" className="w-full">
+          <motion.span
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="rounded-btn bg-ink text-canvas flex h-11 w-full items-center justify-center px-5 font-medium"
+          >
+            Create a free account
+          </motion.span>
+        </Link>
+      </div>
+      <p className="text-muted px-1 text-xs">
+        Your existing notes move over to your account automatically when you sign in.
       </p>
 
       {dumps === null ? (

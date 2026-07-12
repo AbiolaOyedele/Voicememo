@@ -143,6 +143,8 @@ export default function RecordPage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="bg-canvas fixed inset-0 z-[90] flex flex-col items-center justify-center px-6"
+            // Monochrome flux until a brand colour is chosen: black → grey fill+glow.
+            style={{ ['--flux-from' as string]: '#000000', ['--flux-to' as string]: '#525252' }}
           >
             <ProgressiveFluxLoader value={progress} phases={PROCESSING_PHASES} />
           </motion.div>

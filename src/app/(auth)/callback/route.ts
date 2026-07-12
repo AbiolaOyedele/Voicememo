@@ -16,7 +16,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const supabase = await createServerSupabaseClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}${safeNext}`)
+      // Now a real account: drop the guest cookie so the app stops treating this
+      // session as a guest. Local guest recordings are migrated client-side.
+      const response = NextResponse.redirect(`${origin}${safeNext}`)
+      response.cookies.delete('dumpty_guest')
+      return response
     }
   }
 

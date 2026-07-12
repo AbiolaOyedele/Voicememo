@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MAX_DURATION_SECONDS } from '@/types/dump'
 import { pickAudioMimeType } from '@/utils/audio'
+import { acquireMic } from '@/lib/mic'
 
 export type RecorderState = 'idle' | 'requesting' | 'recording' | 'stopped' | 'error'
 
@@ -51,8 +52,9 @@ export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): 
     }
   }, [])
 
-  const stopStream = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop())
+  // Detach from the shared mic stream WITHOUT stopping its tracks — the stream is
+  // session-shared (see lib/mic) and reused across recordings to avoid re-prompts.
+  const detachStream = useCallback(() => {
     streamRef.current = null
     setStream(null)
   }, [])
@@ -79,7 +81,7 @@ export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): 
     setState('requesting')
     let stream: MediaStream
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream = await acquireMic()
     } catch {
       setState('error')
       setError('Microphone access was blocked. Enable it in your browser settings and try again.')
@@ -91,7 +93,6 @@ export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): 
     try {
       recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
     } catch {
-      stream.getTracks().forEach((t) => t.stop())
       setState('error')
       setError('We could not start recording on this browser.')
       return
@@ -114,7 +115,7 @@ export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): 
       )
       const type = mimeRef.current || 'audio/webm'
       const blob = new Blob(chunksRef.current, { type })
-      stopStream()
+      detachStream()
       setRecording({ blob, mimeType: type, durationSeconds })
       setState('stopped')
     }
@@ -132,26 +133,26 @@ export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): 
         stop()
       }
     }, 250)
-  }, [clearTimer, stop, stopStream, maxDurationSeconds])
+  }, [clearTimer, stop, detachStream, maxDurationSeconds])
 
   const reset = useCallback(() => {
     clearTimer()
-    stopStream()
+    detachStream()
     recorderRef.current = null
     chunksRef.current = []
     setElapsedSeconds(0)
     setError(null)
     setRecording(null)
     setState('idle')
-  }, [clearTimer, stopStream])
+  }, [clearTimer, detachStream])
 
   // Cleanup on unmount.
   useEffect(() => {
     return () => {
       clearTimer()
-      stopStream()
+      detachStream()
     }
-  }, [clearTimer, stopStream])
+  }, [clearTimer, detachStream])
 
   return { state, elapsedSeconds, error, recording, stream, start, stop, reset }
 }

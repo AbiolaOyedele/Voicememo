@@ -377,16 +377,5 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // The shader is a glow (luminous rim, transparent core), so it only reads on a
-  // dark surface. The backdrop gives it that contrast against the app's white UI.
-  return (
-    <div
-      className={cn(
-        'relative h-full w-full overflow-hidden rounded-full bg-neutral-900',
-        className,
-      )}
-    >
-      <div ref={ctnDom} className="absolute inset-0 h-full w-full" />
-    </div>
-  )
+  return <div ref={ctnDom} className={cn('relative h-full w-full', className)} />
 }
