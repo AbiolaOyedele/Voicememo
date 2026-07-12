@@ -80,7 +80,7 @@ export function GuestLibrary() {
           <motion.span
             whileTap={{ scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="rounded-btn bg-ink text-canvas flex h-11 w-full items-center justify-center px-5 font-medium"
+            className="rounded-btn bg-flame flex h-11 w-full items-center justify-center px-5 font-medium text-white"
           >
             Create a free account
           </motion.span>
@@ -107,7 +107,7 @@ export function GuestLibrary() {
           </p>
           <Link
             href="/record"
-            className="rounded-btn bg-ink text-canvas mt-2 inline-flex h-11 items-center px-5 font-medium"
+            className="rounded-btn bg-flame mt-2 inline-flex h-11 items-center px-5 font-medium text-white"
           >
             Record a note
           </Link>

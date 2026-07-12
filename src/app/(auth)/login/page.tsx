@@ -72,7 +72,7 @@ export default function LoginPage() {
       >
         {/* Header: Dumpty wordmark + description */}
         <div className="flex flex-col items-center text-center">
-          <Logo as="h1" className="text-5xl" />
+          <Logo as="h1" className="text-flame text-5xl" />
           <p className="text-muted mt-2 text-sm">
             Speak your ideas freely. Get back a clean, readable version.
           </p>
@@ -106,7 +106,7 @@ export default function LoginPage() {
                 whileTap={{ scale: 0.98 }}
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.15 }}
-                className="rounded-btn bg-ink text-canvas flex h-12 min-h-11 w-full items-center justify-center gap-2 px-5 font-medium transition-opacity disabled:opacity-60"
+                className="rounded-btn bg-flame flex h-12 min-h-11 w-full items-center justify-center gap-2 px-5 font-medium text-white transition-opacity disabled:opacity-60"
               >
                 <MailMark />
                 {emailStatus === 'sending' ? 'Sending…' : 'Continue with Email'}

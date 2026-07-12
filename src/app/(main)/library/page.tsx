@@ -125,7 +125,7 @@ function EmptyState() {
       </p>
       <Link
         href="/record"
-        className="rounded-btn bg-ink text-canvas mt-2 inline-flex h-11 items-center px-5 font-medium"
+        className="rounded-btn bg-flame mt-2 inline-flex h-11 items-center px-5 font-medium text-white"
       >
         Record an idea
       </Link>

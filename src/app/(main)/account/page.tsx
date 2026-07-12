@@ -19,7 +19,7 @@ export default async function AccountPage() {
           <p className="text-muted text-sm">You are browsing as a guest.</p>
           <Link
             href="/login"
-            className="rounded-btn bg-ink text-canvas inline-flex h-11 items-center px-5 font-medium"
+            className="rounded-btn bg-flame inline-flex h-11 items-center px-5 font-medium text-white"
           >
             Sign in
           </Link>

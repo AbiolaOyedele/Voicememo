@@ -100,7 +100,7 @@ interface FluxLabelProps {
 // progress via `aria-valuetext`. Under reduced motion it is plain static text.
 function FluxLabel({ label, reduced, className }: FluxLabelProps) {
   const base = cn(
-    'text-muted absolute inset-0 flex items-center justify-center text-center text-3xl font-semibold tracking-tight sm:text-4xl',
+    'text-muted absolute inset-0 flex items-center justify-center text-center text-xl font-semibold tracking-tight sm:text-2xl',
     className,
   )
 
@@ -236,10 +236,10 @@ export function ProgressiveFluxLoader({
   const rounded = Math.round(current)
 
   return (
-    <div className={cn('mx-auto flex w-full max-w-md flex-col items-center gap-8', className)}>
+    <div className={cn('mx-auto flex w-full max-w-xs flex-col items-center gap-5', className)}>
       {showLabel && (
         <div
-          className="relative h-16 w-full select-none"
+          className="relative h-10 w-full select-none"
           style={reduced ? undefined : { perspective: '1000px' }}
         >
           <FluxLabel label={label} reduced={reduced} className={textClassName} />
@@ -248,7 +248,7 @@ export function ProgressiveFluxLoader({
 
       <div
         className={cn(
-          'bg-ink/10 relative h-5 w-full overflow-hidden rounded-full shadow-[inset_0_2px_3px_rgba(0,0,0,0.09),inset_0_-1px_2px_rgba(255,255,255,0.7)]',
+          'bg-ink/10 relative h-3 w-full overflow-hidden rounded-full shadow-[inset_0_2px_3px_rgba(0,0,0,0.09),inset_0_-1px_2px_rgba(255,255,255,0.7)]',
           barClassName,
         )}
         role="progressbar"

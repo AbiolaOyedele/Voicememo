@@ -15,7 +15,7 @@ interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'ref'> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  primary: 'bg-ink text-canvas',
+  primary: 'bg-flame text-white',
   secondary: 'bg-canvas text-ink border border-ink/15',
   ghost: 'bg-transparent text-ink',
 }

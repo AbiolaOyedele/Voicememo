@@ -181,7 +181,7 @@ function DetailToggle({
           type="button"
           onClick={() => onChange(v)}
           className={`rounded-[8px] px-3 py-1 font-medium capitalize transition-colors ${
-            view === v ? 'bg-ink text-canvas' : 'text-muted'
+            view === v ? 'bg-flame text-white' : 'text-muted'
           }`}
         >
           {v === 'clean' ? 'Clean' : 'Raw'}

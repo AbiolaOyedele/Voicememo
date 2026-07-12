@@ -49,7 +49,7 @@ export function TabBar() {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'relative flex h-11 min-w-11 items-center justify-center rounded-full px-3 transition-colors',
-                active ? 'bg-ink/10 text-ink' : 'text-muted hover:bg-ink/5',
+                active ? 'bg-flame/12 text-flame' : 'text-muted hover:bg-ink/5',
               )}
             >
               <Icon size={22} />
