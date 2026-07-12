@@ -6,8 +6,8 @@ import type { MetadataRoute } from 'next'
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Idea Dump',
-    short_name: 'Idea Dump',
+    name: 'Dumpty',
+    short_name: 'Dumpty',
     description: 'Speak your ideas freely. Get back a clean, segmented, readable version.',
     start_url: '/record',
     scope: '/',

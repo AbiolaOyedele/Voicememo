@@ -42,8 +42,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
   const isApi = pathname.startsWith('/api')
   const isAuthPath = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  // Guests get local-only access to the main app via a cookie (no server session).
+  const isGuest = request.cookies.get('dumpty_guest')?.value === '1'
 
-  if (!user && !isApi && !isAuthPath) {
+  if (!user && !isGuest && !isApi && !isAuthPath) {
     return redirectPreservingCookies(request, response, '/login')
   }
   if (user && isAuthPath) {

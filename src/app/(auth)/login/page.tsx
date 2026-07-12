@@ -1,8 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
+import { enableGuest } from '@/lib/guest'
+import { Logo } from '@/components/ui/Logo'
 
 /**
  * Sign-in screen. Email magic link (works with the enabled email provider) plus
@@ -10,6 +13,7 @@ import { createBrowserSupabaseClient } from '@/lib/supabase'
  * loading and error states inline.
  */
 export default function LoginPage() {
+  const router = useRouter()
   const [googleStatus, setGoogleStatus] = useState<'idle' | 'redirecting'>('idle')
   const [email, setEmail] = useState('')
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent'>('idle')
@@ -34,6 +38,11 @@ export default function LoginPage() {
     }
   }
 
+  function continueAsGuest(): void {
+    enableGuest()
+    router.push('/record')
+  }
+
   async function sendMagicLink(e: React.FormEvent): Promise<void> {
     e.preventDefault()
     if (!email.trim()) return
@@ -56,7 +65,7 @@ export default function LoginPage() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-16">
       <div className="flex flex-col items-center gap-3 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Idea Dump</h1>
+        <Logo as="h1" className="text-6xl" />
         <p className="text-muted max-w-xs">
           Speak your ideas freely. Get back a clean, readable version.
         </p>
@@ -118,6 +127,17 @@ export default function LoginPage() {
             {error}
           </p>
         ) : null}
+
+        <button
+          type="button"
+          onClick={continueAsGuest}
+          className="text-muted hover:text-ink mt-1 min-h-11 text-center text-sm underline underline-offset-4 transition-colors"
+        >
+          Continue as a guest
+        </button>
+        <p className="text-muted text-center text-xs">
+          Guest notes stay on this device, up to 5 minutes each.
+        </p>
       </div>
     </main>
   )

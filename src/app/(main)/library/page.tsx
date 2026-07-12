@@ -1,13 +1,23 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { Dump } from '@/types/dump'
 import { useDumps } from '@/hooks/useDumps'
+import { isGuest } from '@/lib/guest'
 import { DumpList } from '@/components/features/library/DumpList'
+import { GuestLibrary } from '@/components/features/library/GuestLibrary'
 import { SearchBar } from '@/components/features/library/SearchBar'
 import { Chip } from '@/components/ui/Chip'
 import { Button } from '@/components/ui/Button'
+
+/** Routes guests to the local library and signed-in users to the synced one. */
+export default function LibraryPage() {
+  const [guest, setGuest] = useState<boolean | null>(null)
+  useEffect(() => setGuest(isGuest()), [])
+  if (guest === null) return null
+  return guest ? <GuestLibrary /> : <SignedInLibrary />
+}
 
 function matchesQuery(dump: Dump, q: string): boolean {
   const haystack = [dump.title, dump.clean_transcript, dump.raw_transcript, dump.tags.join(' ')]
@@ -17,7 +27,7 @@ function matchesQuery(dump: Dump, q: string): boolean {
   return haystack.includes(q)
 }
 
-export default function LibraryPage() {
+function SignedInLibrary() {
   const { dumps, loading, error, refetch, setDumps } = useDumps()
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)

@@ -25,11 +25,12 @@ export interface UseRecorder {
 }
 
 /**
- * MediaRecorder wrapper. Handles mic permission, timing, the 15-minute hard cap
+ * MediaRecorder wrapper. Handles mic permission, timing, a hard duration cap
  * (auto-stops), and produces a single audio Blob on stop. Cleans up the media
- * stream on stop and unmount.
+ * stream on stop and unmount. `maxDurationSeconds` defaults to the app-wide cap
+ * but can be lowered (e.g. 5 minutes for guests).
  */
-export function useRecorder(): UseRecorder {
+export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): UseRecorder {
   const [state, setState] = useState<RecorderState>('idle')
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -108,7 +109,7 @@ export function useRecorder(): UseRecorder {
 
     recorder.onstop = () => {
       const durationSeconds = Math.min(
-        MAX_DURATION_SECONDS,
+        maxDurationSeconds,
         Math.round((Date.now() - startedAtRef.current) / 1000),
       )
       const type = mimeRef.current || 'audio/webm'
@@ -127,11 +128,11 @@ export function useRecorder(): UseRecorder {
       const secs = Math.round((Date.now() - startedAtRef.current) / 1000)
       setElapsedSeconds(secs)
       // Hard cap: auto-stop at the maximum duration.
-      if (secs >= MAX_DURATION_SECONDS) {
+      if (secs >= maxDurationSeconds) {
         stop()
       }
     }, 250)
-  }, [clearTimer, stop, stopStream])
+  }, [clearTimer, stop, stopStream, maxDurationSeconds])
 
   const reset = useCallback(() => {
     clearTimer()

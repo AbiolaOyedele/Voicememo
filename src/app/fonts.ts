@@ -1,5 +1,7 @@
+import localFont from 'next/font/local'
+
 /**
- * NoirPro — the Idea Dump brand typeface.
+ * NoirPro — the app's brand/body typeface.
  *
  * NoirPro is a licensed commercial font, so its files are NOT committed to the
  * repo. Once you have them, drop these three files into `public/fonts/`:
@@ -30,3 +32,14 @@
 
 /** Build-safe placeholder until the licensed NoirPro files are added. */
 export const noirPro = { variable: '' } as const
+
+/**
+ * Sketcha Kits — the display face used for the "Dumpty" wordmark/logo only.
+ * Exposed as the `--font-logo` CSS variable; use it via the <Logo /> component.
+ */
+export const dumptyLogo = localFont({
+  src: [{ path: '../../public/fonts/Sketcha-Kits.otf', weight: '400', style: 'normal' }],
+  variable: '--font-logo',
+  display: 'swap',
+  fallback: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+})

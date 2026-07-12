@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb'
+import { Logo } from '@/components/ui/Logo'
 import { Timer } from '@/components/features/record/Timer'
 import { QueuedIndicator } from '@/components/features/record/QueuedIndicator'
 import { Button } from '@/components/ui/Button'
@@ -11,12 +12,18 @@ import { Spinner } from '@/components/ui/Spinner'
 import { useRecorder } from '@/hooks/useRecorder'
 import { uploadRecording } from '@/lib/upload-client'
 import { enqueueRecording } from '@/lib/offline-queue'
+import { MAX_DURATION_SECONDS } from '@/types/dump'
+import { isGuest, saveGuestDump, GUEST_MAX_DURATION_SECONDS } from '@/lib/guest'
 
 type SaveState = 'idle' | 'saving' | 'queued' | 'error'
 
 export default function RecordPage() {
   const router = useRouter()
-  const { state, elapsedSeconds, error, recording, stream, start, stop, reset } = useRecorder()
+  const [guest, setGuest] = useState(false)
+  useEffect(() => setGuest(isGuest()), [])
+  const maxDuration = guest ? GUEST_MAX_DURATION_SECONDS : MAX_DURATION_SECONDS
+  const { state, elapsedSeconds, error, recording, stream, start, stop, reset } =
+    useRecorder(maxDuration)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -33,6 +40,21 @@ export default function RecordPage() {
   async function handleSave(): Promise<void> {
     if (!recording) return
     setSaveError(null)
+
+    // Guests save locally only — no server upload or transcription.
+    if (guest) {
+      setSaveState('saving')
+      try {
+        await saveGuestDump(recording)
+        reset()
+        setSaveState('idle')
+        router.push('/library')
+      } catch {
+        setSaveState('error')
+        setSaveError('We could not save your note on this device. Please try again.')
+      }
+      return
+    }
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       try {
@@ -70,9 +92,11 @@ export default function RecordPage() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-10">
       <header className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {isRecording ? 'Recording' : 'Idea Dump'}
-        </h1>
+        {isRecording ? (
+          <h1 className="text-2xl font-bold tracking-tight">Recording</h1>
+        ) : (
+          <Logo as="h1" className="text-5xl" />
+        )}
         <p className="text-muted mt-1 text-sm">
           {isRecording
             ? 'Say whatever is on your mind.'
