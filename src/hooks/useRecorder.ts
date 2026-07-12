@@ -17,6 +17,8 @@ export interface UseRecorder {
   elapsedSeconds: number
   error: string | null
   recording: Recording | null
+  /** The live capture stream while recording (for audio visualisation). Null otherwise. */
+  stream: MediaStream | null
   start: () => Promise<void>
   stop: () => void
   reset: () => void
@@ -32,6 +34,7 @@ export function useRecorder(): UseRecorder {
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [recording, setRecording] = useState<Recording | null>(null)
+  const [stream, setStream] = useState<MediaStream | null>(null)
 
   const recorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -50,6 +53,7 @@ export function useRecorder(): UseRecorder {
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
+    setStream(null)
   }, [])
 
   const stop = useCallback(() => {
@@ -93,6 +97,7 @@ export function useRecorder(): UseRecorder {
     }
 
     streamRef.current = stream
+    setStream(stream)
     recorderRef.current = recorder
     chunksRef.current = []
     mimeRef.current = recorder.mimeType || mimeType
@@ -147,5 +152,5 @@ export function useRecorder(): UseRecorder {
     }
   }, [clearTimer, stopStream])
 
-  return { state, elapsedSeconds, error, recording, start, stop, reset }
+  return { state, elapsedSeconds, error, recording, stream, start, stop, reset }
 }

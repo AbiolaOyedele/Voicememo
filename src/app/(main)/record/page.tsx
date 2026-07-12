@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
-import { RecordButton } from '@/components/features/record/RecordButton'
+import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb'
 import { Timer } from '@/components/features/record/Timer'
 import { QueuedIndicator } from '@/components/features/record/QueuedIndicator'
 import { Button } from '@/components/ui/Button'
@@ -16,11 +16,10 @@ type SaveState = 'idle' | 'saving' | 'queued' | 'error'
 
 export default function RecordPage() {
   const router = useRouter()
-  const { state, elapsedSeconds, error, recording, start, stop, reset } = useRecorder()
+  const { state, elapsedSeconds, error, recording, stream, start, stop, reset } = useRecorder()
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  // Object URL for playing back the captured recording.
   const audioUrl = useMemo(
     () => (recording ? URL.createObjectURL(recording.blob) : null),
     [recording],
@@ -36,7 +35,6 @@ export default function RecordPage() {
     setSaveError(null)
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      // Offline: persist to the IndexedDB queue; it syncs when back online.
       try {
         await enqueueRecording(recording)
         setSaveState('queued')
@@ -65,20 +63,22 @@ export default function RecordPage() {
     setSaveError(null)
   }
 
+  const isRecording = state === 'recording'
+  const isBusy = state === 'requesting'
   const showStopped = state === 'stopped' && recording
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-10">
       <header className="text-center">
         <h1 className="text-2xl font-bold tracking-tight">
-          {state === 'recording' ? 'Recording' : 'Idea Dump'}
+          {isRecording ? 'Recording' : 'Idea Dump'}
         </h1>
         <p className="text-muted mt-1 text-sm">
-          {state === 'recording'
+          {isRecording
             ? 'Say whatever is on your mind.'
             : showStopped
               ? 'Save it, or record again.'
-              : 'Tap to speak your idea freely.'}
+              : 'Tap the orb to speak your idea freely.'}
         </p>
       </header>
 
@@ -125,14 +125,34 @@ export default function RecordPage() {
             transition={{ duration: 0.2 }}
             className="flex flex-col items-center gap-8"
           >
-            <RecordButton state={state} onStart={start} onStop={stop} />
-            {state === 'recording' ? (
+            <motion.button
+              type="button"
+              onClick={isRecording ? stop : start}
+              disabled={isBusy}
+              whileTap={{ scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+              aria-pressed={isRecording}
+              className="relative h-64 w-64 overflow-hidden rounded-full disabled:opacity-70"
+            >
+              <VoicePoweredOrb
+                enableVoiceControl={isRecording}
+                mediaStream={stream}
+                maxHoverIntensity={0.6}
+              />
+              {isRecording ? (
+                <span className="pointer-events-none absolute top-1/2 left-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-md bg-white/90 shadow" />
+              ) : null}
+            </motion.button>
+
+            {isRecording ? (
               <Timer elapsedSeconds={elapsedSeconds} />
-            ) : state === 'requesting' ? (
+            ) : isBusy ? (
               <p className="text-muted flex items-center gap-2 text-sm">
                 <Spinner size={16} /> Waiting for microphone…
               </p>
             ) : null}
+
             {state === 'error' && error ? (
               <p role="alert" className="text-muted max-w-xs text-center text-sm">
                 {error}
