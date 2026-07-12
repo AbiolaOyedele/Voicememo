@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
 import { enableGuest } from '@/lib/guest'
-import { Logo } from '@/components/ui/Logo'
 
 /**
  * Sign-in screen. Email magic link (works with the enabled email provider) plus
@@ -63,83 +62,126 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-16">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <Logo as="h1" className="text-6xl" />
-        <p className="text-muted max-w-xs">
-          Speak your ideas freely. Get back a clean, readable version.
-        </p>
-      </div>
-
-      <div className="flex w-full max-w-xs flex-col gap-4">
-        {emailStatus === 'sent' ? (
-          <div className="rounded-card border-ink/10 flex flex-col items-center gap-1 border p-5 text-center">
-            <p className="font-semibold">Check your email</p>
-            <p className="text-muted text-sm">
-              We sent a sign-in link to <span className="text-ink">{email.trim()}</span>.
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={sendMagicLink} className="flex flex-col gap-3">
-            <input
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              aria-label="Email address"
-              className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink h-12 w-full border bg-transparent px-4 text-[15px] outline-none"
-            />
-            <motion.button
-              type="submit"
-              disabled={emailStatus === 'sending'}
-              whileTap={{ scale: 0.98 }}
-              transition={{ duration: 0.15 }}
-              className="rounded-btn bg-ink text-canvas flex h-12 min-h-11 w-full items-center justify-center px-5 font-medium transition-opacity disabled:opacity-60"
+    <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="rounded-card border-ink/10 bg-canvas w-full max-w-sm border p-6 shadow-sm sm:p-7"
+      >
+        {/* Header: logo tile + title + description */}
+        <div className="flex flex-col items-center text-center">
+          <div className="bg-ink mb-4 flex h-16 w-16 items-center justify-center rounded-2xl">
+            <span
+              className="text-canvas text-4xl leading-none"
+              style={{ fontFamily: 'var(--font-logo)' }}
+              aria-hidden
             >
-              {emailStatus === 'sending' ? 'Sending…' : 'Email me a sign-in link'}
-            </motion.button>
-          </form>
-        )}
-
-        <div className="text-muted flex items-center gap-3 text-xs">
-          <span className="bg-ink/10 h-px flex-1" />
-          or
-          <span className="bg-ink/10 h-px flex-1" />
+              D
+            </span>
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">Welcome to Dumpty</h1>
+          <p className="text-muted mt-1.5 text-sm">
+            Speak your ideas freely. Get back a clean, readable version.
+          </p>
         </div>
 
-        <motion.button
-          type="button"
-          onClick={signInWithGoogle}
-          disabled={googleStatus === 'redirecting'}
-          whileTap={{ scale: 0.98 }}
-          transition={{ duration: 0.15 }}
-          className="rounded-btn border-ink/15 text-ink hover:bg-ink/[0.04] flex h-12 min-h-11 w-full items-center justify-center gap-3 border px-5 font-medium transition-colors disabled:opacity-60"
-        >
-          <GoogleMark />
-          {googleStatus === 'redirecting' ? 'Opening Google…' : 'Continue with Google'}
-        </motion.button>
+        {/* Actions */}
+        <div className="mt-6 flex flex-col gap-4">
+          {emailStatus === 'sent' ? (
+            <div className="rounded-btn border-ink/10 bg-ink/[0.03] flex flex-col items-center gap-1 border p-5 text-center">
+              <p className="font-semibold">Check your email</p>
+              <p className="text-muted text-sm">
+                We sent a sign-in link to <span className="text-ink">{email.trim()}</span>.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={sendMagicLink} className="flex flex-col gap-3">
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                aria-label="Email address"
+                className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink h-12 w-full border bg-transparent px-4 text-[15px] outline-none"
+              />
+              <motion.button
+                type="submit"
+                disabled={emailStatus === 'sending'}
+                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.15 }}
+                className="rounded-btn bg-ink text-canvas flex h-12 min-h-11 w-full items-center justify-center gap-2 px-5 font-medium transition-opacity disabled:opacity-60"
+              >
+                <MailMark />
+                {emailStatus === 'sending' ? 'Sending…' : 'Continue with Email'}
+              </motion.button>
+            </form>
+          )}
 
-        {error ? (
-          <p role="alert" className="text-muted text-center text-sm">
-            {error}
-          </p>
-        ) : null}
+          {/* OR separator */}
+          <div className="text-muted relative flex items-center justify-center text-xs uppercase">
+            <span className="bg-ink/10 absolute inset-x-0 top-1/2 h-px" />
+            <span className="bg-canvas relative px-2">or</span>
+          </div>
 
-        <button
-          type="button"
-          onClick={continueAsGuest}
-          className="text-muted hover:text-ink mt-1 min-h-11 text-center text-sm underline underline-offset-4 transition-colors"
-        >
-          Continue as a guest
-        </button>
-        <p className="text-muted text-center text-xs">
-          Guest notes stay on this device, up to 5 minutes each.
-        </p>
-      </div>
+          {/* Google */}
+          <motion.button
+            type="button"
+            onClick={signInWithGoogle}
+            disabled={googleStatus === 'redirecting'}
+            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.15 }}
+            className="rounded-btn border-ink/15 text-ink hover:bg-ink/[0.04] flex h-12 min-h-11 w-full items-center justify-center gap-3 border px-5 font-medium transition-colors disabled:opacity-60"
+          >
+            <GoogleMark />
+            {googleStatus === 'redirecting' ? 'Opening Google…' : 'Continue with Google'}
+          </motion.button>
+
+          {error ? (
+            <p role="alert" className="text-muted text-center text-sm">
+              {error}
+            </p>
+          ) : null}
+
+          {/* Skip → guest */}
+          <motion.button
+            type="button"
+            onClick={continueAsGuest}
+            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.15 }}
+            className="rounded-btn border-ink/15 text-muted hover:text-ink hover:bg-ink/[0.04] flex h-12 min-h-11 w-full items-center justify-center border px-5 font-medium transition-colors"
+          >
+            Continue as a guest
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* Footer */}
+      <motion.p
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        className="text-muted mt-6 w-full max-w-sm px-6 text-center text-xs"
+      >
+        Guest notes stay on this device, up to 5 minutes each. By continuing you agree to our Terms
+        and Privacy Policy.
+      </motion.p>
     </main>
+  )
+}
+
+/** Mail glyph for the primary email action. */
+function MailMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+      <path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z" />
+    </svg>
   )
 }
 
