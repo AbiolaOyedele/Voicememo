@@ -136,9 +136,6 @@ export default function RecordPage() {
               className="relative h-64 w-64 overflow-hidden rounded-full disabled:opacity-70"
             >
               <VoicePoweredOrb enableVoiceControl={isRecording} mediaStream={stream} />
-              {isRecording ? (
-                <span className="bg-ink pointer-events-none absolute top-1/2 left-1/2 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-md" />
-              ) : null}
             </motion.button>
 
             {isRecording ? (
