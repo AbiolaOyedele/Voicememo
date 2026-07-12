@@ -3,9 +3,13 @@ import type { Dump, DumpStatus, Segment } from '@/types/dump'
 import { AppError } from '@/lib/errors'
 
 /**
- * All database access for the `dumps` table. Every query filters by `user_id`
+ * All database access for the dumps table. Every query filters by `user_id`
  * (defense in depth on top of RLS). Nothing but queries lives here.
+ *
+ * The table is namespaced (`idea_dump_dumps`) because this app shares its
+ * Supabase database with other projects.
  */
+const DUMPS_TABLE = 'idea_dump_dumps'
 
 export interface CreateDumpInput {
   userId: string
@@ -29,7 +33,7 @@ export interface UpdateDumpPatch {
 /** Insert a new dump owned by `userId`. */
 export async function insertDump(supabase: SupabaseClient, input: CreateDumpInput): Promise<Dump> {
   const { data, error } = await supabase
-    .from('dumps')
+    .from(DUMPS_TABLE)
     .insert({
       user_id: input.userId,
       duration_seconds: input.durationSeconds,
@@ -48,7 +52,7 @@ export async function insertDump(supabase: SupabaseClient, input: CreateDumpInpu
 /** List a user's non-deleted dumps, pinned first then most recent. */
 export async function listDumps(supabase: SupabaseClient, userId: string): Promise<Dump[]> {
   const { data, error } = await supabase
-    .from('dumps')
+    .from(DUMPS_TABLE)
     .select()
     .eq('user_id', userId)
     .is('deleted_at', null)
@@ -68,7 +72,7 @@ export async function getDumpById(
   id: string,
 ): Promise<Dump | null> {
   const { data, error } = await supabase
-    .from('dumps')
+    .from(DUMPS_TABLE)
     .select()
     .eq('id', id)
     .eq('user_id', userId)
@@ -89,7 +93,7 @@ export async function updateDump(
   patch: UpdateDumpPatch,
 ): Promise<Dump> {
   const { data, error } = await supabase
-    .from('dumps')
+    .from(DUMPS_TABLE)
     .update(patch)
     .eq('id', id)
     .eq('user_id', userId)
@@ -110,7 +114,7 @@ export async function softDeleteDump(
   id: string,
 ): Promise<void> {
   const { error } = await supabase
-    .from('dumps')
+    .from(DUMPS_TABLE)
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
     .eq('user_id', userId)

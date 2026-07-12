@@ -5,34 +5,56 @@ import { motion } from 'framer-motion'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
 
 /**
- * Sign-in screen. The only auth entry point — Google OAuth via Supabase.
- * Handles its loading and error states inline.
+ * Sign-in screen. Email magic link (works with the enabled email provider) plus
+ * Google OAuth (once the Google provider is enabled in Supabase). Handles its
+ * loading and error states inline.
  */
 export default function LoginPage() {
-  const [status, setStatus] = useState<'idle' | 'redirecting'>('idle')
+  const [googleStatus, setGoogleStatus] = useState<'idle' | 'redirecting'>('idle')
+  const [email, setEmail] = useState('')
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [error, setError] = useState<string | null>(null)
+
+  // These handlers only run in the browser, so window is always defined here.
+  const callbackUrl = (): string => `${window.location.origin}/callback?next=/record`
 
   async function signInWithGoogle(): Promise<void> {
     setError(null)
-    setStatus('redirecting')
+    setGoogleStatus('redirecting')
     try {
       const supabase = createBrowserSupabaseClient()
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/callback?next=/record`,
-        },
+        options: { redirectTo: callbackUrl() },
       })
       if (oauthError) throw oauthError
-      // On success the browser is redirected to Google; nothing more to do here.
     } catch {
-      setStatus('idle')
-      setError('We could not start sign-in. Please try again.')
+      setGoogleStatus('idle')
+      setError('Google sign-in is not available yet. Use the email link instead.')
+    }
+  }
+
+  async function sendMagicLink(e: React.FormEvent): Promise<void> {
+    e.preventDefault()
+    if (!email.trim()) return
+    setError(null)
+    setEmailStatus('sending')
+    try {
+      const supabase = createBrowserSupabaseClient()
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { emailRedirectTo: callbackUrl() },
+      })
+      if (otpError) throw otpError
+      setEmailStatus('sent')
+    } catch {
+      setEmailStatus('idle')
+      setError('We could not send the link. Check the address and try again.')
     }
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-10 px-6 py-16">
+    <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-16">
       <div className="flex flex-col items-center gap-3 text-center">
         <h1 className="text-3xl font-bold tracking-tight">Idea Dump</h1>
         <p className="text-muted max-w-xs">
@@ -40,17 +62,55 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <div className="flex w-full max-w-xs flex-col gap-3">
+      <div className="flex w-full max-w-xs flex-col gap-4">
+        {emailStatus === 'sent' ? (
+          <div className="rounded-card border-ink/10 flex flex-col items-center gap-1 border p-5 text-center">
+            <p className="font-semibold">Check your email</p>
+            <p className="text-muted text-sm">
+              We sent a sign-in link to <span className="text-ink">{email.trim()}</span>.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={sendMagicLink} className="flex flex-col gap-3">
+            <input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              aria-label="Email address"
+              className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink h-12 w-full border bg-transparent px-4 text-[15px] outline-none"
+            />
+            <motion.button
+              type="submit"
+              disabled={emailStatus === 'sending'}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.15 }}
+              className="rounded-btn bg-ink text-canvas flex h-12 min-h-11 w-full items-center justify-center px-5 font-medium transition-opacity disabled:opacity-60"
+            >
+              {emailStatus === 'sending' ? 'Sending…' : 'Email me a sign-in link'}
+            </motion.button>
+          </form>
+        )}
+
+        <div className="text-muted flex items-center gap-3 text-xs">
+          <span className="bg-ink/10 h-px flex-1" />
+          or
+          <span className="bg-ink/10 h-px flex-1" />
+        </div>
+
         <motion.button
           type="button"
           onClick={signInWithGoogle}
-          disabled={status === 'redirecting'}
+          disabled={googleStatus === 'redirecting'}
           whileTap={{ scale: 0.98 }}
           transition={{ duration: 0.15 }}
-          className="rounded-btn bg-ink text-canvas flex h-12 min-h-11 w-full items-center justify-center gap-3 px-5 font-medium transition-opacity disabled:opacity-60"
+          className="rounded-btn border-ink/15 text-ink hover:bg-ink/[0.04] flex h-12 min-h-11 w-full items-center justify-center gap-3 border px-5 font-medium transition-colors disabled:opacity-60"
         >
           <GoogleMark />
-          {status === 'redirecting' ? 'Opening Google…' : 'Continue with Google'}
+          {googleStatus === 'redirecting' ? 'Opening Google…' : 'Continue with Google'}
         </motion.button>
 
         {error ? (
