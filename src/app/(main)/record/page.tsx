@@ -16,6 +16,9 @@ import {
   type ProgressiveFluxPhase,
 } from '@/components/ui/progressive-flux-loader'
 import { useRecorder } from '@/hooks/useRecorder'
+import { useToast } from '@/components/ui/Toast'
+import { AudioPlayer } from '@/components/features/record/AudioPlayer'
+import { MicPrimer } from '@/components/features/record/MicPrimer'
 import { uploadRecording } from '@/lib/upload-client'
 import { enqueueRecording } from '@/lib/offline-queue'
 import { MAX_DURATION_SECONDS } from '@/types/dump'
@@ -23,11 +26,11 @@ import { isGuest, saveGuestDump, GUEST_MAX_DURATION_SECONDS } from '@/lib/guest'
 
 type SaveState = 'idle' | 'saving' | 'queued' | 'error'
 
-/** Phase labels for the transcription pipeline, keyed to upload-client progress. */
+/** Playful phase labels shown over the flux loader while an idea is processed. */
 const PROCESSING_PHASES: ProgressiveFluxPhase[] = [
-  { at: 0, label: 'Uploading' },
-  { at: 40, label: 'Transcribing' },
-  { at: 70, label: 'Cleaning up' },
+  { at: 0, label: 'Dumpty is compiling your thoughts' },
+  { at: 40, label: 'Untangling the good bits' },
+  { at: 70, label: 'Giving it a polish' },
   { at: 100, label: 'All done' },
 ]
 
@@ -37,6 +40,7 @@ const STAGE_CEILINGS = [38, 68, 98]
 
 export default function RecordPage() {
   const goToTab = useTabNav()
+  const toast = useToast()
   const [guest, setGuest] = useState(false)
   useEffect(() => setGuest(isGuest()), [])
   const maxDuration = guest ? GUEST_MAX_DURATION_SECONDS : MAX_DURATION_SECONDS
@@ -46,6 +50,32 @@ export default function RecordPage() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [primerOpen, setPrimerOpen] = useState(false)
+
+  // First time the user taps to record, show our own primer before the browser's
+  // native permission dialog (which we can't restyle). Afterwards, tap straight
+  // through — an already-granted mic won't re-prompt anyway.
+  const MIC_PRIMED_KEY = 'dumpty_mic_primed'
+  function handleOrbTap(): void {
+    if (state === 'recording') {
+      stop()
+      return
+    }
+    if (typeof window !== 'undefined' && localStorage.getItem(MIC_PRIMED_KEY) !== '1') {
+      setPrimerOpen(true)
+      return
+    }
+    void start()
+  }
+  function allowMic(): void {
+    try {
+      localStorage.setItem(MIC_PRIMED_KEY, '1')
+    } catch {
+      // Storage unavailable — proceed anyway; the native prompt still gates access.
+    }
+    setPrimerOpen(false)
+    void start()
+  }
 
   // Gentle in-stage creep: nudge progress toward the current stage's ceiling
   // while we await the server, so the bar never sits frozen during a long step.
@@ -83,6 +113,7 @@ export default function RecordPage() {
         await saveGuestDump(recording)
         reset()
         setSaveState('idle')
+        toast.success('Idea saved')
         // The library panel is already mounted in the swipe carousel, so
         // navigating to it won't remount/refetch — tell it to reload.
         window.dispatchEvent(new Event('dumpty:dumps-updated'))
@@ -90,6 +121,7 @@ export default function RecordPage() {
       } catch {
         setSaveState('error')
         setSaveError('We could not save your note on this device. Please try again.')
+        toast.error('Could not save your note')
       }
       return
     }
@@ -119,6 +151,7 @@ export default function RecordPage() {
       reset()
       setProcessing(false)
       setSaveState('idle')
+      toast.success('Idea saved')
       // The library panel is already mounted in the swipe carousel, so
       // navigating to it won't remount/refetch — tell it to reload.
       window.dispatchEvent(new Event('dumpty:dumps-updated'))
@@ -127,6 +160,7 @@ export default function RecordPage() {
       setProcessing(false)
       setSaveState('error')
       setSaveError('We could not save your recording. Check your connection and try again.')
+      toast.error('Could not save your recording')
     }
   }
 
@@ -190,10 +224,7 @@ export default function RecordPage() {
             transition={{ duration: 0.2 }}
             className="flex w-full max-w-xs flex-col items-center gap-5"
           >
-            {audioUrl ? (
-              // eslint-disable-next-line jsx-a11y/media-has-caption
-              <audio controls src={audioUrl} className="w-full" />
-            ) : null}
+            {audioUrl ? <AudioPlayer src={audioUrl} /> : null}
 
             {saveState === 'queued' ? (
               <QueuedIndicator>Queued — this will upload when you are back online.</QueuedIndicator>
@@ -225,7 +256,7 @@ export default function RecordPage() {
           >
             <motion.button
               type="button"
-              onClick={isRecording ? stop : start}
+              onClick={handleOrbTap}
               disabled={isBusy}
               whileTap={{ scale: 0.96 }}
               transition={{ duration: 0.15 }}
@@ -252,6 +283,8 @@ export default function RecordPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <MicPrimer open={primerOpen} onAllow={allowMic} onClose={() => setPrimerOpen(false)} />
     </main>
   )
 }

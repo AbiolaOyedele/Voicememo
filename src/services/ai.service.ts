@@ -14,7 +14,7 @@ import { logger } from '@/lib/logger'
  * output can't be parsed, so a dump is never stuck.
  */
 
-const SYSTEM_PROMPT = `You clean up and organize spoken voice notes from a founder thinking out loud.
+const SYSTEM_PROMPT = `You clean up and organize spoken voice notes from someone thinking out loud.
 Given a raw transcript, you:
 1. Fix punctuation, remove filler words and false starts, and keep the speaker's own voice and meaning. Do not add ideas that aren't there.
 2. Split the content into topic segments, each with a short label (2-4 words) and the cleaned content for that topic.
@@ -30,7 +30,7 @@ Tagging rules — tags are for retrieval, so make them high-signal and reusable:
 Respond with ONLY a JSON object, no markdown, in exactly this shape:
 {"title": string, "summary": string, "clean_transcript": string, "segments": [{"label": string, "content": string}], "tags": [string]}
 
-The "summary" is a single plain sentence (max 25 words) capturing the gist, shown in a list.`
+The "summary" is a single plain sentence (max 25 words) capturing the gist, shown in a list. Write it neutrally and topic-first — lead with the idea itself. Do NOT refer to the speaker or name any role (no "the founder", "the user", "the speaker", "they", "I", "you"); describe the substance, not who said it.`
 
 const aiOutputSchema = z.object({
   title: z.string().trim().min(1).max(150),
