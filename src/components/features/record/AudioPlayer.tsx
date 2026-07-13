@@ -9,17 +9,28 @@ import { formatDuration } from '@/utils/audio'
  * a flame play/pause control and a seekable track in the app's faint-orange
  * palette. Keyboard-accessible via the range input under the visual track.
  */
-export function AudioPlayer({ src }: { src: string }) {
+export function AudioPlayer({ src, durationSeconds }: { src: string; durationSeconds?: number }) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
-  const [duration, setDuration] = useState(0)
+  const [duration, setDuration] = useState(durationSeconds ?? 0)
 
   useEffect(() => {
     const el = audioRef.current
     if (!el) return
     const onTime = (): void => setCurrent(el.currentTime)
-    const onMeta = (): void => setDuration(Number.isFinite(el.duration) ? el.duration : 0)
+    const onMeta = (): void => {
+      // MediaRecorder blobs commonly report duration as Infinity/NaN (a known
+      // WebKit/Chromium quirk) and the browser's internal probe for it can
+      // leave currentTime non-zero before playback ever starts. Prefer the
+      // recorder's own wall-clock duration and resync the playhead to 0.
+      const metaDuration = el.duration
+      if (Number.isFinite(metaDuration) && metaDuration > 0) {
+        setDuration(metaDuration)
+      }
+      el.currentTime = 0
+      setCurrent(0)
+    }
     const onEnd = (): void => {
       setPlaying(false)
       setCurrent(0)

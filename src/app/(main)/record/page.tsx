@@ -224,7 +224,9 @@ export default function RecordPage() {
             transition={{ duration: 0.2 }}
             className="flex w-full max-w-xs flex-col items-center gap-5"
           >
-            {audioUrl ? <AudioPlayer src={audioUrl} /> : null}
+            {audioUrl && recording ? (
+              <AudioPlayer src={audioUrl} durationSeconds={recording.durationSeconds} />
+            ) : null}
 
             {saveState === 'queued' ? (
               <QueuedIndicator>Queued — this will upload when you are back online.</QueuedIndicator>
