@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb'
 import { Logo } from '@/components/ui/Logo'
@@ -10,6 +9,7 @@ import { QueuedIndicator } from '@/components/features/record/QueuedIndicator'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useRefreshDisabled } from '@/hooks/useRefreshControl'
+import { useTabNav } from '@/hooks/useTabCarousel'
 import { Portal } from '@/components/ui/Portal'
 import {
   ProgressiveFluxLoader,
@@ -36,7 +36,7 @@ const PROCESSING_PHASES: ProgressiveFluxPhase[] = [
 const STAGE_CEILINGS = [38, 68, 98]
 
 export default function RecordPage() {
-  const router = useRouter()
+  const goToTab = useTabNav()
   const [guest, setGuest] = useState(false)
   useEffect(() => setGuest(isGuest()), [])
   const maxDuration = guest ? GUEST_MAX_DURATION_SECONDS : MAX_DURATION_SECONDS
@@ -83,7 +83,7 @@ export default function RecordPage() {
         await saveGuestDump(recording)
         reset()
         setSaveState('idle')
-        router.push('/library')
+        goToTab('/library')
       } catch {
         setSaveState('error')
         setSaveError('We could not save your note on this device. Please try again.')
@@ -116,7 +116,7 @@ export default function RecordPage() {
       reset()
       setProcessing(false)
       setSaveState('idle')
-      router.push('/library')
+      goToTab('/library')
     } catch {
       setProcessing(false)
       setSaveState('error')

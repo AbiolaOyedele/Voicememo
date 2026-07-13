@@ -1,59 +1,38 @@
 'use client'
 
-import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useUpdatePrompt } from '@/hooks/useUpdatePrompt'
-import { XIcon } from './icons'
-import { REFRESH_FLAG } from './PullToRefresh'
+import { ChevronDownIcon } from './icons'
 
 /**
- * Small, dismissible notice that a newer version of the app is live. Slides in
- * from the top so it never covers the primary content or the tab bar. Tapping
- * "Update" reloads (the splash flag keeps the Dumpty logo up across the reload).
- * Detection is disabled in local dev, so this only appears in production.
+ * A tiny, non-intrusive hint at the very top telling the user a newer version
+ * is live and to pull down to get it — the pull-to-refresh gesture reloads and
+ * picks up the new deploy. Not a bar or a button: just a small line of text
+ * that clears itself once the app is refreshed (the new build no longer differs,
+ * so the hint stops showing). Detection is prod-only, so it never shows in dev.
  */
 export function UpdatePrompt() {
   const updateAvailable = useUpdatePrompt()
-  const [dismissed, setDismissed] = useState(false)
-  const show = updateAvailable && !dismissed
-
-  function update(): void {
-    try {
-      sessionStorage.setItem(REFRESH_FLAG, '1')
-    } catch {
-      /* private mode — non-fatal */
-    }
-    window.location.reload()
-  }
 
   return (
     <AnimatePresence>
-      {show ? (
+      {updateAvailable ? (
         <motion.div
-          initial={{ y: -80, opacity: 0 }}
+          initial={{ y: -24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -80, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-          className="fixed inset-x-0 top-0 z-[70] flex justify-center px-4 pt-[calc(env(safe-area-inset-top)+0.5rem)]"
+          exit={{ y: -24, opacity: 0 }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="pointer-events-none fixed inset-x-0 top-0 z-[70] flex justify-center pt-[calc(env(safe-area-inset-top)+0.5rem)]"
         >
-          <div className="rounded-card border-ink/10 bg-canvas flex w-full max-w-md items-center gap-3 border px-4 py-2.5 shadow-sm">
-            <span className="flex-1 text-[13px]">A new version of Dumpty is ready.</span>
-            <button
-              type="button"
-              onClick={update}
-              className="rounded-btn bg-flame flex h-8 items-center px-3 text-[13px] text-white"
+          <span className="text-muted bg-canvas/80 flex items-center gap-1 rounded-full px-3 py-1 text-[11px] tracking-wide backdrop-blur-sm">
+            New version — pull down to update
+            <motion.span
+              animate={{ y: [0, 2, 0] }}
+              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
             >
-              Update
-            </button>
-            <button
-              type="button"
-              onClick={() => setDismissed(true)}
-              aria-label="Dismiss"
-              className="text-muted hover:text-ink -mr-1 flex h-8 w-8 items-center justify-center"
-            >
-              <XIcon size={16} />
-            </button>
-          </div>
+              <ChevronDownIcon size={12} />
+            </motion.span>
+          </span>
         </motion.div>
       ) : null}
     </AnimatePresence>

@@ -11,9 +11,11 @@ const MAX_PULL = 96 // px visual cap
 const RESISTANCE = 0.45 // how much the pull slows past the trigger distance
 
 /**
- * sessionStorage flag set just before a pull-to-refresh reload so the brand
- * splash shows again on the fresh load, bridging the reload with the Dumpty
- * logo so it's obvious the app actually reloaded. Read + cleared by Splash.
+ * sessionStorage flag that makes the brand Splash show again on the next load,
+ * bridging a reload with the Dumpty logo. Set by the update banner (which has no
+ * overlay of its own); read + cleared by Splash. Pull-to-refresh does NOT set it
+ * — it already shows its own logo + spinner overlay, so a splash would be a
+ * second logo.
  */
 export const REFRESH_FLAG = 'dumpty_refreshing'
 
@@ -26,7 +28,9 @@ const REFRESH_MESSAGES = [
 ]
 
 interface PullToRefreshProps {
-  onRefresh: () => Promise<void>
+  /** Optional pre-reload hook (e.g. flush a pending write). The commit always
+   * hard-reloads regardless, so this is best-effort. */
+  onRefresh?: () => Promise<void>
   children: ReactNode
   /** Disables the gesture entirely — e.g. mid-recording, where a surprise
    * reload would destroy an in-progress take. */
@@ -50,9 +54,12 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
   const [refreshing, setRefreshing] = useState(false)
   const [message, setMessage] = useState('')
   const startY = useRef<number | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   function onTouchStart(e: ReactTouchEvent): void {
-    if (disabled || refreshing || window.scrollY > 0) {
+    // Engage only when this panel's own scroller is at the very top, so it
+    // never fights normal vertical scrolling within the panel.
+    if (disabled || refreshing || (rootRef.current?.scrollTop ?? 0) > 0) {
       startY.current = null
       return
     }
@@ -82,7 +89,7 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
       // Flush any registered client refetch, then hard-reload. We intentionally
       // do NOT set the splash flag here: this overlay (logo + spinner) is the
       // single refresh visual — the post-reload Splash would be a second logo.
-      void onRefresh().catch(() => {})
+      void onRefresh?.().catch(() => {})
       window.setTimeout(() => window.location.reload(), 600)
     } else {
       setPull(0)
@@ -94,10 +101,11 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
 
   return (
     <div
+      ref={rootRef}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      className="flex flex-1 flex-col"
+      className="flex h-full flex-col overflow-x-hidden overflow-y-auto overscroll-contain"
     >
       <motion.div
         animate={{ height: refreshing ? TRIGGER_DISTANCE : pull }}

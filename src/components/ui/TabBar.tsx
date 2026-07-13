@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import type { ComponentType } from 'react'
 import { LibraryIcon, MicIcon, UserIcon } from './icons'
+import { useTabCarousel } from '@/hooks/useTabCarousel'
 import { cn } from '@/lib/utils'
 
 interface Tab {
@@ -27,6 +28,9 @@ export const TABS: Tab[] = [
 export function TabBar() {
   const pathname = usePathname()
   const router = useRouter()
+  // Inside the carousel, tabs scroll between mounted panels; on detail routes
+  // there's no carousel, so fall back to a normal route navigation.
+  const carousel = useTabCarousel()
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1.75rem)]">
@@ -38,12 +42,14 @@ export function TabBar() {
         className="border-ink/10 bg-canvas pointer-events-auto flex items-center gap-1 rounded-full border p-1.5"
       >
         {TABS.map(({ href, label, Icon }) => {
-          const active = pathname === href || pathname.startsWith(`${href}/`)
+          const active = carousel
+            ? carousel.activeHref === href
+            : pathname === href || pathname.startsWith(`${href}/`)
           return (
             <motion.button
               key={href}
               type="button"
-              onClick={() => router.push(href)}
+              onClick={() => (carousel ? carousel.goToTab(href) : router.push(href))}
               whileTap={{ scale: 0.96 }}
               aria-label={label}
               aria-current={active ? 'page' : undefined}
