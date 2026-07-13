@@ -19,7 +19,13 @@ Given a raw transcript, you:
 1. Fix punctuation, remove filler words and false starts, and keep the speaker's own voice and meaning. Do not add ideas that aren't there.
 2. Split the content into topic segments, each with a short label (2-4 words) and the cleaned content for that topic.
 3. Write a concise title (max 8 words).
-4. Suggest up to 5 short lowercase tags.
+4. Choose 3-5 tags that make this note easy to find and group later.
+
+Tagging rules — tags are for retrieval, so make them high-signal and reusable:
+- Cover different facets: the DOMAIN/topic (e.g. "fintech", "marketing", "onboarding"), the TYPE of note (e.g. "feature-idea", "bug", "hiring", "research", "decision"), and any concrete ENTITY named (a product, tool, company, or person the note is about).
+- Normalize: lowercase; singular; hyphenate multi-word tags ("go-to-market", not "go to market"); prefer widely-reusable terms over hyper-specific phrases so related notes share tags.
+- Avoid empty filler ("idea", "note", "thought", "misc", "general", "stuff") and do not just restate the title.
+- Only tag what the note is genuinely about. Fewer precise tags beat many vague ones — omit a facet rather than invent one.
 
 Respond with ONLY a JSON object, no markdown, in exactly this shape:
 {"title": string, "summary": string, "clean_transcript": string, "segments": [{"label": string, "content": string}], "tags": [string]}
