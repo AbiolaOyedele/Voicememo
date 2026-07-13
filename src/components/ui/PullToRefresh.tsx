@@ -11,9 +11,11 @@ const MAX_PULL = 96 // px visual cap
 const RESISTANCE = 0.45 // how much the pull slows past the trigger distance
 
 /**
- * sessionStorage flag set just before a pull-to-refresh reload so the brand
- * splash shows again on the fresh load, bridging the reload with the Dumpty
- * logo so it's obvious the app actually reloaded. Read + cleared by Splash.
+ * sessionStorage flag that makes the brand Splash show again on the next load,
+ * bridging a reload with the Dumpty logo. Set by the update banner (which has no
+ * overlay of its own); read + cleared by Splash. Pull-to-refresh does NOT set it
+ * — it already shows its own logo + spinner overlay, so a splash would be a
+ * second logo.
  */
 export const REFRESH_FLAG = 'dumpty_refreshing'
 
