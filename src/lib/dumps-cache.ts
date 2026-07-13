@@ -51,3 +51,17 @@ export function upsertCachedDump(dump: Dump): void {
 export function removeCachedDump(id: string): void {
   writeDumpsCache(readDumpsCache().filter((d) => d.id !== id))
 }
+
+/**
+ * Purges the cache entirely. Must be called on sign-out and account deletion —
+ * this cache is not scoped by user id, so leaving it populated would let the
+ * next account signed into this browser see the previous account's ideas.
+ */
+export function clearDumpsCache(): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(KEY)
+  } catch {
+    // Storage unavailable — nothing to clear.
+  }
+}

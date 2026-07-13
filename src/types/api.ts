@@ -38,6 +38,7 @@ export type DumpListResponse = Dump[]
 export interface CreateUploadRequest {
   duration_seconds: number
   content_type: string
+  size_bytes: number
 }
 
 /** Presigned upload target returned to the client. */

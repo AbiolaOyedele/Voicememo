@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { useGuestMigration } from '@/hooks/useGuestMigration'
+import { useAuthCacheGuard } from '@/hooks/useAuthCacheGuard'
 import {
   RefreshControlContext,
   type RefreshControl,
@@ -33,6 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   useOfflineSync()
   useGuestMigration()
+  useAuthCacheGuard()
 
   // Kept so pages' useRegisterRefresh / useRefreshDisabled still resolve; the
   // pull-to-refresh gesture itself now hard-reloads, but recording still needs

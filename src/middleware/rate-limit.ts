@@ -1,3 +1,4 @@
+import type { NextRequest } from 'next/server'
 import { AppError } from '@/lib/errors'
 
 /**
@@ -24,6 +25,7 @@ export interface RateLimit {
 export const RATE_LIMITS = {
   paid: { limit: 20, windowMs: 60_000 }, // upload/transcribe/process
   standard: { limit: 120, windowMs: 60_000 },
+  public: { limit: 10, windowMs: 60_000 }, // unauthenticated endpoints, e.g. feedback
 } as const
 
 /**
@@ -47,4 +49,15 @@ export function enforceRateLimit(identifier: string, opts: RateLimit): void {
     )
   }
   bucket.count += 1
+}
+
+/**
+ * Best-effort client identifier for rate-limiting unauthenticated requests.
+ * Trusts `x-forwarded-for`, which Vercel's edge sets/overwrites itself (not
+ * client-controllable in that deployment); off-platform this header could be
+ * spoofed, so this is a soft throttle, not a hard guarantee — same caveat as
+ * the in-memory limiter above.
+ */
+export function getClientIp(req: NextRequest): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
 }
