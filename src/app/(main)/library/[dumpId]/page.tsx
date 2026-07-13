@@ -10,6 +10,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useRegisterRefresh } from '@/hooks/useRefreshControl'
+import { readCachedDump, upsertCachedDump, removeCachedDump } from '@/lib/dumps-cache'
 import { ExportActions } from '@/components/features/library/ExportActions'
 import { ChevronDownIcon, ChevronLeftIcon, StarIcon, TrashIcon } from '@/components/ui/icons'
 import { formatDuration } from '@/utils/audio'
@@ -22,15 +23,20 @@ export default function DumpDetailPage() {
   const router = useRouter()
   const dumpId = params.dumpId
 
-  const [dump, setDump] = useState<Dump | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Open instantly from the on-device cache — the library list stores full
+  // rows, so a tapped/swiped idea renders immediately with no skeleton. The
+  // background fetch below revalidates. Only show a spinner on a true cold miss.
+  const cached = readCachedDump(dumpId)
+  const [dump, setDump] = useState<Dump | null>(cached)
+  const [loading, setLoading] = useState(cached === null)
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<View>('clean')
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(async () => {
-    setLoading(true)
+    // A warm cache means the page is already on screen — revalidate silently.
+    setLoading(readCachedDump(dumpId) === null)
     setError(null)
     try {
       const res = await fetch(`/api/v1/dumps/${dumpId}`, { cache: 'no-store' })
@@ -40,8 +46,10 @@ export default function DumpDetailPage() {
       } | null
       if (!res.ok || !json?.data) throw new Error(json?.error?.message ?? 'Not found')
       setDump(json.data)
+      upsertCachedDump(json.data)
     } catch {
-      setError('We could not open that idea.')
+      // Only surface an error if we have nothing cached to show.
+      if (readCachedDump(dumpId) === null) setError('We could not open that idea.')
     } finally {
       setLoading(false)
     }
@@ -56,12 +64,17 @@ export default function DumpDetailPage() {
   async function togglePin(): Promise<void> {
     if (!dump) return
     const next = !dump.is_pinned
-    setDump({ ...dump, is_pinned: next })
+    const updated = { ...dump, is_pinned: next }
+    setDump(updated)
+    upsertCachedDump(updated)
     await fetch(`/api/v1/dumps/${dump.id}`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ is_pinned: next }),
-    }).catch(() => setDump({ ...dump, is_pinned: dump.is_pinned }))
+    }).catch(() => {
+      setDump({ ...dump, is_pinned: dump.is_pinned })
+      upsertCachedDump({ ...dump, is_pinned: dump.is_pinned })
+    })
   }
 
   async function remove(): Promise<void> {
@@ -70,6 +83,7 @@ export default function DumpDetailPage() {
     try {
       const res = await fetch(`/api/v1/dumps/${dump.id}`, { method: 'DELETE' })
       if (res.ok) {
+        removeCachedDump(dump.id)
         router.push('/library')
         return
       }
