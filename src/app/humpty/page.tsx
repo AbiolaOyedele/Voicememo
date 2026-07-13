@@ -1,6 +1,4 @@
-import { getDashboardData } from '@/services/admin.service'
-import { PushBroadcaster } from '@/components/features/admin/PushBroadcaster'
-import type { FeedbackRecord } from '@/types/feedback'
+import { getDashboardMetrics } from '@/services/admin.service'
 import type { RecentSignup } from '@/types/admin'
 
 // Always render fresh — this is a live operational dashboard, never cached.
@@ -24,18 +22,11 @@ function StatTile({ label, value }: { label: string; value: number }) {
   )
 }
 
-const TYPE_EMOJI: Record<FeedbackRecord['type'], string> = {
-  bug: '🐞',
-  feature: '✨',
-  other: '💬',
-}
-
 export default async function HumptyDashboard() {
-  const { users, feedback, feedbackCount, pushSubscriberCount } = await getDashboardData()
+  const { users, pushSubscriberCount } = await getDashboardMetrics()
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Metrics */}
       <section>
         <h2 className="text-muted mb-3 text-xs font-medium tracking-wide uppercase">Users</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -44,13 +35,11 @@ export default async function HumptyDashboard() {
           <StatTile label="Last 7 days" value={users.signups7d} />
           <StatTile label="Last 30 days" value={users.signups30d} />
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-3">
           <StatTile label="Push subscribers" value={pushSubscriberCount} />
-          <StatTile label="Feedback total" value={feedbackCount} />
         </div>
       </section>
 
-      {/* Recent signups */}
       <section>
         <h2 className="text-muted mb-3 text-xs font-medium tracking-wide uppercase">
           Recent signups
@@ -66,39 +55,6 @@ export default async function HumptyDashboard() {
                   {s.provider ? `${s.provider} · ` : ''}
                   {fmtDate(s.createdAt)}
                 </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Marketing / push */}
-      <section>
-        <h2 className="text-muted mb-3 text-xs font-medium tracking-wide uppercase">
-          Marketing — send a push
-        </h2>
-        <PushBroadcaster subscriberCount={pushSubscriberCount} />
-      </section>
-
-      {/* Recent feedback */}
-      <section>
-        <h2 className="text-muted mb-3 text-xs font-medium tracking-wide uppercase">
-          Recent feedback
-        </h2>
-        {feedback.length === 0 ? (
-          <p className="text-muted text-sm">No feedback yet.</p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {feedback.map((f) => (
-              <li key={f.id} className="rounded-card border-ink/10 border p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm">
-                    {TYPE_EMOJI[f.type]} {f.type}
-                  </span>
-                  <span className="text-muted text-xs">{fmtDate(f.createdAt)}</span>
-                </div>
-                <p className="mt-2 text-[15px] whitespace-pre-wrap">{f.message}</p>
-                {f.pageUrl ? <p className="text-muted mt-2 text-xs">{f.pageUrl}</p> : null}
               </li>
             ))}
           </ul>

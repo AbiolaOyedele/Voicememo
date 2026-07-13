@@ -51,20 +51,26 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(title, options))
 })
 
-// Focus an existing app window (or open one) when a notification is tapped.
+// Focus an existing app window (or open one) when a notification is tapped,
+// and take it to the target URL. The stored url may be a relative path (e.g.
+// "/library") — resolve it against the SW origin so navigate()/openWindow()
+// always get an absolute, same-origin URL.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = (event.notification.data as { url?: string } | undefined)?.url || '/'
+  const raw = (event.notification.data as { url?: string } | undefined)?.url || '/'
+  const target = new URL(raw, self.location.origin).href
+
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clients) => {
       for (const client of clients) {
-        if ('focus' in client) {
-          void client.focus()
-          if ('navigate' in client) void (client as WindowClient).navigate(url)
+        if (client.url.startsWith(self.location.origin)) {
+          await client.focus()
+          // Only navigate if it isn't already on the target, to avoid a reload.
+          if (client.url !== target) await (client as WindowClient).navigate(target)
           return
         }
       }
-      return self.clients.openWindow(url)
+      await self.clients.openWindow(target)
     }),
   )
 })

@@ -3,6 +3,8 @@ import { getOptionalUser } from '@/middleware/auth'
 import { SignOutButton } from '@/components/features/account/SignOutButton'
 import { DeleteAccountButton } from '@/components/features/account/DeleteAccountButton'
 import { FeedbackButton } from '@/components/features/account/FeedbackButton'
+import { NotificationsToggle } from '@/components/features/account/NotificationsToggle'
+import { AdminLinkRow } from '@/components/features/account/AdminLinkRow'
 import { ChangelogSection } from '@/components/features/account/ChangelogSection'
 import { ComingSoonSection } from '@/components/features/account/ComingSoonSection'
 import { Reveal } from '@/components/ui/Reveal'
@@ -66,6 +68,8 @@ export default async function AccountPage() {
           <h2 className="text-muted px-1 text-xs tracking-wide uppercase">Settings</h2>
           <ul className="rounded-card divide-ink/10 border-ink/10 divide-y border">
             <SettingRow label="Export your data" hint="Coming soon" />
+            <NotificationsToggle />
+            <AdminLinkRow />
             <FeedbackButton />
             <DeleteAccountButton />
           </ul>
