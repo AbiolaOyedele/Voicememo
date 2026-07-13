@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Chip } from '@/components/ui/Chip'
 import { Button } from '@/components/ui/Button'
@@ -29,6 +30,9 @@ export function FeedbackButton() {
   const [type, setType] = useState<FeedbackType>('feature')
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState<Status>('idle')
+  // Portal the modal to body so the swipe track's transform doesn't offset it.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   function close(): void {
     setOpen(false)
@@ -74,7 +78,9 @@ export function FeedbackButton() {
         </button>
       </li>
 
-      <AnimatePresence>
+      {mounted
+        ? createPortal(
+            <AnimatePresence>
         {open ? (
           <motion.div
             key="feedback-backdrop"
@@ -158,7 +164,10 @@ export function FeedbackButton() {
             </motion.div>
           </motion.div>
         ) : null}
-      </AnimatePresence>
+      </AnimatePresence>,
+            document.body,
+          )
+        : null}
     </>
   )
 }

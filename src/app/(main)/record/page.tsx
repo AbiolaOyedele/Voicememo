@@ -10,6 +10,7 @@ import { QueuedIndicator } from '@/components/features/record/QueuedIndicator'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { useRefreshDisabled } from '@/hooks/useRefreshControl'
+import { Portal } from '@/components/ui/Portal'
 import {
   ProgressiveFluxLoader,
   type ProgressiveFluxPhase,
@@ -139,22 +140,24 @@ export default function RecordPage() {
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-10">
-      <AnimatePresence>
-        {processing ? (
-          <motion.div
-            key="processing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-canvas fixed inset-0 z-[90] flex flex-col items-center justify-center px-6"
-            // Brand flame fill + glow.
-            style={{ ['--flux-from' as string]: '#ff4f03', ['--flux-to' as string]: '#ff9a5c' }}
-          >
-            <ProgressiveFluxLoader value={progress} phases={PROCESSING_PHASES} />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      <Portal>
+        <AnimatePresence>
+          {processing ? (
+            <motion.div
+              key="processing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-canvas fixed inset-0 z-[90] flex flex-col items-center justify-center px-6"
+              // Brand flame fill + glow.
+              style={{ ['--flux-from' as string]: '#ff4f03', ['--flux-to' as string]: '#ff9a5c' }}
+            >
+              <ProgressiveFluxLoader value={progress} phases={PROCESSING_PHASES} />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </Portal>
 
       <header className="text-center">
         {isRecording ? (
