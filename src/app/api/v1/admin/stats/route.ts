@@ -4,7 +4,7 @@ import { getDashboardMetrics } from '@/services/admin.service'
 import { jsonOk, toErrorResponse } from '@/lib/http'
 
 // GET /api/v1/admin/stats
-// Auth: admin only. User/signup metrics + current push-subscriber count.
+// Auth: admin only. User/signup metrics, visitor reach, and push-subscriber count.
 export async function GET(): Promise<NextResponse> {
   try {
     await requireAdmin()

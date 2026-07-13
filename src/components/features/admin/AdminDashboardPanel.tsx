@@ -1,13 +1,14 @@
 'use client'
 
 import { useAdminResource } from '@/hooks/useAdminResource'
-import type { AdminUserStats, RecentSignup } from '@/types/admin'
+import type { AdminUserStats, RecentSignup, VisitStats } from '@/types/admin'
 import { StatTile, PanelLoading, PanelError, fmtDate } from './adminUi'
 import { BackToAppButton } from './BackToAppButton'
 
 interface StatsData {
   users: AdminUserStats
   pushSubscriberCount: number
+  visits: VisitStats
 }
 
 export function AdminDashboardPanel() {
@@ -16,10 +17,25 @@ export function AdminDashboardPanel() {
   if (loading) return <PanelLoading />
   if (error || !data) return <PanelError onRetry={reload} />
 
-  const { users, pushSubscriberCount } = data
+  const { users, pushSubscriberCount, visits } = data
 
   return (
     <div className="flex flex-col gap-8">
+      <section>
+        <h2 className="text-muted mb-3 text-xs font-medium tracking-wide uppercase">
+          Visitors
+        </h2>
+        <p className="text-muted mb-3 text-xs">
+          Everyone who has opened the app, whether or not they signed up.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile label="Total visitors" value={visits.totalVisitors} />
+          <StatTile label="New today" value={visits.visitorsToday} />
+          <StatTile label="Last 7 days" value={visits.visitors7d} />
+          <StatTile label="Last 30 days" value={visits.visitors30d} />
+        </div>
+      </section>
+
       <section>
         <h2 className="text-muted mb-3 text-xs font-medium tracking-wide uppercase">Users</h2>
         <div className="grid grid-cols-2 gap-3">

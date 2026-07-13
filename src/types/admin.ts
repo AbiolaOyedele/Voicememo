@@ -31,6 +31,14 @@ export interface AdminUserStats {
   recentSignups: RecentSignup[]
 }
 
+/** Anonymous visitor counts for the dashboard overview. */
+export interface VisitStats {
+  totalVisitors: number
+  visitorsToday: number
+  visitors7d: number
+  visitors30d: number
+}
+
 /** Everything the dashboard overview renders. */
 export interface AdminDashboardData {
   users: AdminUserStats

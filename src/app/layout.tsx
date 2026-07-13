@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { noirPro, dumptyLogo } from './fonts'
 import { ToastProvider } from '@/components/ui/Toast'
+import { VisitTracker } from '@/components/ui/VisitTracker'
 
 export const metadata: Metadata = {
   title: {
@@ -40,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${noirPro.variable} ${dumptyLogo.variable} h-full antialiased`}>
       <body className="bg-canvas text-ink flex min-h-full flex-col">
+        <VisitTracker />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

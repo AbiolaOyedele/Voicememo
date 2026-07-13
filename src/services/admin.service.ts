@@ -2,7 +2,8 @@ import { createAdminSupabaseClient } from '@/lib/supabase-admin'
 import { getUserStats } from '@/repositories/admin.repository'
 import { countFeedback, listRecentFeedback } from '@/repositories/feedback.repository'
 import { countSubscriptions } from '@/repositories/push.repository'
-import type { AdminUserStats } from '@/types/admin'
+import { getVisitStats } from '@/repositories/visits.repository'
+import type { AdminUserStats, VisitStats } from '@/types/admin'
 import type { FeedbackRecord } from '@/types/feedback'
 
 /**
@@ -11,17 +12,19 @@ import type { FeedbackRecord } from '@/types/feedback'
  * access (see requireAdmin) before invoking any of these.
  */
 
-/** Dashboard tab: user/signup metrics plus the current subscriber count. */
+/** Dashboard tab: user/signup metrics, visitor reach, and subscriber count. */
 export async function getDashboardMetrics(): Promise<{
   users: AdminUserStats
   pushSubscriberCount: number
+  visits: VisitStats
 }> {
   const admin = createAdminSupabaseClient()
-  const [users, pushSubscriberCount] = await Promise.all([
+  const [users, pushSubscriberCount, visits] = await Promise.all([
     getUserStats(admin),
     countSubscriptions(admin),
+    getVisitStats(admin),
   ])
-  return { users, pushSubscriberCount }
+  return { users, pushSubscriberCount, visits }
 }
 
 /** Marketing tab: how many devices a broadcast would currently reach. */

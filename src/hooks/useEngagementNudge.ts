@@ -18,11 +18,10 @@ export interface EngagementNudge {
 }
 
 /**
- * Decides whether to nudge the user — at most once every 7 days — to install
- * the app or (once installed) enable notifications. Whoever has already done
- * both is never nudged. This replaces the old one-time install/notification
- * prompts with a single, gentle, recurring reminder for the thing they're
- * missing.
+ * Decides whether to nudge the user — at most once every 7 days — to enable
+ * notifications or install the app. Whoever has already done both is never
+ * nudged. This replaces the old one-time install/notification prompts with a
+ * single, gentle, recurring reminder for the thing they're missing.
  */
 export function useEngagementNudge(): EngagementNudge {
   const { device, installed } = useInstallPrompt()
@@ -39,14 +38,16 @@ export function useEngagementNudge(): EngagementNudge {
     setReady(true)
   }, [])
 
-  // What's the user missing? Install takes priority; then notifications. A
-  // 'denied' notification permission counts as "nothing we can do", so we don't
-  // nag about it.
+  // What's the user missing? Notifications take priority whenever push already
+  // works in-browser (desktop and Android Chrome don't require installing the
+  // PWA first) — only iOS needs the install step before push becomes available
+  // at all, which `supported` naturally reflects. A 'denied' notification
+  // permission counts as "nothing we can do", so we don't nag about it.
   let kind: NudgeKind | null = null
-  if (!installed && device !== 'other') {
-    kind = 'install'
-  } else if (installed && supported && permission === 'default' && !subscribed) {
+  if (supported && permission === 'default' && !subscribed) {
     kind = 'notifications'
+  } else if (!installed && device !== 'other') {
+    kind = 'install'
   }
 
   useEffect(() => {
