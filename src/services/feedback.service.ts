@@ -1,5 +1,8 @@
 import { z } from 'zod'
 import { AppError } from '@/lib/errors'
+import { logger } from '@/lib/logger'
+import { createAdminSupabaseClient } from '@/lib/supabase-admin'
+import { insertFeedback } from '@/repositories/feedback.repository'
 import { sendFeedbackNotification } from '@/services/email.service'
 
 const submitSchema = z.object({
@@ -36,12 +39,31 @@ export async function submitFeedback(
   }
   const { type, message, page_url, app_version } = parsed.data
 
-  await sendFeedbackNotification({
+  // Persist the durable record first (this backs the admin dashboard), then
+  // notify by email. A failed email must not lose the submission, so the insert
+  // comes first, and an email failure after it is logged, not surfaced.
+  await insertFeedback(createAdminSupabaseClient(), {
+    userId: ctx.userId,
     type,
     message,
-    userId: ctx.userId,
     pageUrl: page_url ?? null,
     appVersion: app_version ?? null,
     userAgent: ctx.userAgent,
   })
+
+  try {
+    await sendFeedbackNotification({
+      type,
+      message,
+      userId: ctx.userId,
+      pageUrl: page_url ?? null,
+      appVersion: app_version ?? null,
+      userAgent: ctx.userAgent,
+    })
+  } catch (error) {
+    // The record is already saved; a failed notification email shouldn't fail
+    // the whole submission. Log and move on rather than surfacing an error.
+    logger.error({ errorCode: 'FEEDBACK_EMAIL_AFTER_SAVE_FAILED' }, 'Feedback saved but email failed')
+    if (!(error instanceof AppError)) throw error
+  }
 }

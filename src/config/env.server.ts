@@ -49,6 +49,17 @@ const serverSchema = z.object({
   // Destination inbox for new-signup alerts. Falls back to FEEDBACK_TO_EMAIL.
   SIGNUP_NOTIFY_TO_EMAIL: z.string().email().optional(),
 
+  // Admin dashboard (/humpty) — comma-separated allowlist of emails permitted
+  // to sign in and reach the dashboard. Everyone else 404s.
+  ADMIN_EMAILS: z.string().min(1).optional(),
+
+  // Web Push (VAPID). Public key is also exposed to the client via
+  // NEXT_PUBLIC_VAPID_PUBLIC_KEY; the private key is server-only. Subject must
+  // be a mailto: or https: URL identifying the sender to push services.
+  VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+  VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+  VAPID_SUBJECT: z.string().min(1).default('mailto:hello@theruff.agency'),
+
   // App
   NEXT_PUBLIC_SITE_URL: z.string().url(),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

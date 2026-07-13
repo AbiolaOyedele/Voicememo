@@ -14,6 +14,7 @@ import {
 import { TabBar, TABS } from './TabBar'
 import { Splash } from './Splash'
 import { InstallPrompt } from './InstallPrompt'
+import { NotificationsPrompt } from './NotificationsPrompt'
 import { PullToRefresh } from './PullToRefresh'
 import { UpdatePrompt } from './UpdatePrompt'
 import { SwipeCarousel } from './SwipeCarousel'
@@ -71,6 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
       </RefreshControlContext.Provider>
       <InstallPrompt />
+      <NotificationsPrompt />
       <UpdatePrompt />
     </>
   )

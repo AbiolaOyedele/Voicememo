@@ -1,6 +1,34 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { AppError } from '@/lib/errors'
+import { env } from '@/config/env.server'
 import { createServerSupabaseClient } from '@/lib/supabase'
+
+/** Parsed, lower-cased admin allowlist from ADMIN_EMAILS (comma-separated). */
+function adminEmails(): string[] {
+  return (env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+}
+
+/** Whether an email is on the admin allowlist. */
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false
+  return adminEmails().includes(email.toLowerCase())
+}
+
+/**
+ * Resolve the signed-in user and assert they're an admin. Throws {@link AppError}
+ * 404 (not 403) for non-admins so the dashboard's existence isn't revealed —
+ * the caller maps this to a not-found page/response.
+ */
+export async function requireAdmin(): Promise<{ supabase: SupabaseClient; user: User }> {
+  const { supabase, user } = await requireUser()
+  if (!isAdminEmail(user.email)) {
+    throw new AppError(404, 'Not found.', 'ADMIN_ACCESS_DENIED')
+  }
+  return { supabase, user }
+}
 
 /**
  * Resolve the authenticated user for a server context (Route Handler / Server
