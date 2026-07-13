@@ -4,6 +4,7 @@ import { SignOutButton } from '@/components/features/account/SignOutButton'
 import { DeleteAccountButton } from '@/components/features/account/DeleteAccountButton'
 import { FeedbackButton } from '@/components/features/account/FeedbackButton'
 import { ChangelogSection } from '@/components/features/account/ChangelogSection'
+import { ComingSoonSection } from '@/components/features/account/ComingSoonSection'
 import { Reveal } from '@/components/ui/Reveal'
 
 /** Read a string field from Supabase user metadata safely. */
@@ -30,7 +31,8 @@ export default async function AccountPage() {
             Sign in
           </Link>
         </Reveal>
-        <Reveal delay={0.1}>
+        <Reveal delay={0.1} className="flex flex-col gap-1">
+          <ComingSoonSection />
           <ChangelogSection />
         </Reveal>
       </main>
@@ -70,7 +72,8 @@ export default async function AccountPage() {
         </section>
       </Reveal>
 
-      <Reveal delay={0.15}>
+      <Reveal delay={0.15} className="flex flex-col gap-1">
+        <ComingSoonSection />
         <ChangelogSection />
       </Reveal>
 

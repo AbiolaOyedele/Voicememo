@@ -1,36 +1,30 @@
 [
   {
-    "version": "0.2.0",
+    "version": "1.0.1",
     "date": "13 July 2026",
-    "title": "Action plans, fluid navigation, versioning",
+    "title": "Polish and fixes",
     "features": [
-      "Action plan checklists — generate a step-by-step plan for any idea, on demand, from its cleaned transcript",
-      "Pull down on Library to refresh — and to pick up new app updates when one is live",
-      "Install prompt with tailored steps for iPhone and Android"
+      "Coming soon — peek at the features we're building next, from the Account tab"
     ],
     "improvements": [
-      "Swiping between tabs now follows your finger in real time and springs back, instead of only reacting on release",
-      "Tab transitions slide in the direction you're moving",
-      "NoirPro Light is now the only weight used across the app",
-      "The Dumpty wordmark is flame-orange everywhere it appears",
-      "Sign-in screen simplified: no card border, guest option moved to a small underlined link, smaller overall footprint",
-      "Added subtle entrance motion to Library, Account, and empty states"
+      "Smoother, iPhone-style swiping between tabs",
+      "Your ideas now open instantly from the library",
+      "Smarter, more consistent tags on every idea"
     ],
     "fixes": [
-      "The bottom tab bar no longer mis-positions when the Library search keyboard is open"
+      "Sending feedback now works reliably"
     ]
   },
   {
-    "version": "0.1.0",
+    "version": "1.0.0",
     "date": "12 July 2026",
-    "title": "Initial release",
+    "title": "Dumpty is here",
     "features": [
-      "Record voice ideas and get a clean, titled, segmented transcript back",
-      "Guest mode — try it without an account, notes stay on-device",
-      "Guest-to-account migration when you sign in",
+      "Record a voice idea and get a clean, titled, organized transcript back",
       "Library with search, tags, and pinning",
-      "Offline recording queue that syncs when back online",
-      "Export ideas, AI-generated summaries"
+      "Action plans — turn any idea into a step-by-step checklist",
+      "Works offline and installs as an app",
+      "Try it as a guest, no account needed"
     ],
     "improvements": [],
     "fixes": []
