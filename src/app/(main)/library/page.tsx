@@ -34,13 +34,28 @@ function SignedInLibrary() {
   const { dumps, loading, error, refetch, setDumps } = useDumps()
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [showAllTags, setShowAllTags] = useState(false)
   useRegisterRefresh(refetch)
 
+  // Tags ordered by popularity (how many ideas use each), then alphabetically.
   const allTags = useMemo(() => {
-    const set = new Set<string>()
-    dumps.forEach((d) => d.tags.forEach((t) => set.add(t)))
-    return Array.from(set).sort()
+    const counts = new Map<string, number>()
+    dumps.forEach((d) => d.tags.forEach((t) => counts.set(t, (counts.get(t) ?? 0) + 1)))
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([tag]) => tag)
   }, [dumps])
+
+  // Collapse to the most popular few; the rest hide behind a "more" toggle.
+  const TAG_LIMIT = 8
+  const visibleTags = useMemo(() => {
+    if (showAllTags) return allTags
+    const top = allTags.slice(0, TAG_LIMIT)
+    // Keep the active tag visible even if it isn't in the popular set.
+    if (activeTag && !top.includes(activeTag)) top.push(activeTag)
+    return top
+  }, [allTags, showAllTags, activeTag])
+  const hiddenCount = allTags.length - visibleTags.length
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -89,11 +104,16 @@ function SignedInLibrary() {
             <Chip active={activeTag === null} onClick={() => setActiveTag(null)}>
               All
             </Chip>
-            {allTags.map((tag) => (
+            {visibleTags.map((tag) => (
               <Chip key={tag} active={activeTag === tag} onClick={() => setActiveTag(tag)}>
                 {tag}
               </Chip>
             ))}
+            {hiddenCount > 0 ? (
+              <Chip onClick={() => setShowAllTags(true)}>+{hiddenCount} more</Chip>
+            ) : showAllTags && allTags.length > TAG_LIMIT ? (
+              <Chip onClick={() => setShowAllTags(false)}>Show less</Chip>
+            ) : null}
           </motion.div>
         ) : null}
 

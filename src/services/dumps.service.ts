@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import type { Dump } from '@/types/dump'
 import { AppError } from '@/lib/errors'
+import { createAdminSupabaseClient } from '@/lib/supabase-admin'
 import {
   getDumpById,
   listDumps,
@@ -93,7 +94,12 @@ export async function deleteDumpForUser(
   userId: string,
   id: string,
 ): Promise<void> {
-  // Ensure it exists and is owned before deleting (clear 404 otherwise).
+  // Ensure it exists and is owned before deleting (clear 404 otherwise) — this
+  // read runs on the caller's RLS-scoped client, so ownership is enforced here.
   await getDumpForUser(supabase, userId, id)
-  await softDeleteDump(supabase, userId, id)
+  // Stamp deleted_at through the service-role client. The table's UPDATE policy
+  // re-checks `deleted_at is null` post-write, so a soft delete would otherwise
+  // trip its own RLS policy (42501). Ownership is already verified above and we
+  // still scope the write by user_id for defense in depth.
+  await softDeleteDump(createAdminSupabaseClient(), userId, id)
 }

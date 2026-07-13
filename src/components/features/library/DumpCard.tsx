@@ -75,10 +75,13 @@ export function DumpCard({ dump, onTogglePin, index = 0 }: DumpCardProps) {
         </div>
 
         {dump.tags.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {dump.tags.slice(0, 4).map((tag) => (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            {dump.tags.slice(0, 2).map((tag) => (
               <Chip key={tag}>{tag}</Chip>
             ))}
+            {dump.tags.length > 2 ? (
+              <span className="text-muted text-xs">+{dump.tags.length - 2}</span>
+            ) : null}
           </div>
         ) : null}
       </Link>
