@@ -46,6 +46,17 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const isLanding = pathname === '/'
   // Guests get local-only access to the main app via a cookie (no server session).
   const isGuest = request.cookies.get('dumpty_guest')?.value === '1'
+  // Once someone has signed in, we remember this browser so that after they sign
+  // out they return to /login rather than the marketing page. This cookie is set
+  // on any authenticated request and deliberately outlives the Supabase session.
+  const isReturning = request.cookies.get('dumpty_returning')?.value === '1'
+  if (user) {
+    response.cookies.set('dumpty_returning', '1', {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    })
+  }
 
   if (!user && !isGuest && !isApi && !isAuthPath && !isLanding) {
     return redirectPreservingCookies(request, response, '/login')
@@ -56,6 +67,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Signed-in and guest users skip the marketing page and land in the app.
   if ((user || isGuest) && isLanding) {
     return redirectPreservingCookies(request, response, '/record')
+  }
+  // A signed-out visitor who has an account (returned before) goes to /login;
+  // only genuine first-time visitors see the marketing landing.
+  if (isLanding && isReturning) {
+    return redirectPreservingCookies(request, response, '/login')
   }
 
   return response
