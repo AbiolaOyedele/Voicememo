@@ -29,7 +29,15 @@ export default function LoginPage() {
       const supabase = createBrowserSupabaseClient()
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: callbackUrl() },
+        options: {
+          redirectTo: callbackUrl(),
+          // Always show Google's account chooser. Without this, Google silently
+          // reuses the active session, so after signing out (or deleting the
+          // account) the user is re-authenticated as the same account with no
+          // way to pick another. This is the "sign in with a different account"
+          // affordance — handled by Google itself.
+          queryParams: { prompt: 'select_account' },
+        },
       })
       if (oauthError) throw oauthError
     } catch {

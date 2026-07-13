@@ -1,15 +1,13 @@
-import { getFeedback } from '@/services/admin.service'
+'use client'
+
+import { useAdminResource } from '@/hooks/useAdminResource'
 import type { FeedbackRecord } from '@/types/feedback'
+import { PanelLoading, PanelError, fmtDate } from './adminUi'
+import { BackToAppButton } from './BackToAppButton'
 
-export const dynamic = 'force-dynamic'
-
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+interface FeedbackData {
+  items: FeedbackRecord[]
+  count: number
 }
 
 const TYPE_EMOJI: Record<FeedbackRecord['type'], string> = {
@@ -18,19 +16,22 @@ const TYPE_EMOJI: Record<FeedbackRecord['type'], string> = {
   other: '💬',
 }
 
-export default async function HumptyFeedback() {
-  const { items, count } = await getFeedback()
+export function AdminFeedbackPanel() {
+  const { data, loading, error, reload } = useAdminResource<FeedbackData>('/api/v1/admin/feedback')
+
+  if (loading) return <PanelLoading />
+  if (error || !data) return <PanelError onRetry={reload} />
 
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-muted text-xs font-medium tracking-wide uppercase">
-        Feedback {count > 0 ? `· ${count.toLocaleString()}` : ''}
+        Feedback {data.count > 0 ? `· ${data.count.toLocaleString()}` : ''}
       </h2>
-      {items.length === 0 ? (
+      {data.items.length === 0 ? (
         <p className="text-muted text-sm">No feedback yet.</p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {items.map((f) => (
+          {data.items.map((f) => (
             <li key={f.id} className="rounded-card border-ink/10 border p-4">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm">
@@ -44,6 +45,7 @@ export default async function HumptyFeedback() {
           ))}
         </ul>
       )}
+      <BackToAppButton />
     </div>
   )
 }
