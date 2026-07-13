@@ -178,20 +178,25 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <RefreshControlContext.Provider value={refreshControl}>
           <PullToRefresh onRefresh={onRefresh} disabled={refreshDisabled}>
-            <AnimatePresence custom={direction} initial={false}>
-              <motion.div
-                key={pathname}
-                custom={direction}
-                variants={variants}
-                initial={reduced ? false : 'enter'}
-                animate="center"
-                exit={reduced ? { opacity: 0 } : 'exit'}
-                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                className="flex flex-1 flex-col"
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
+            {/* Grid stack: the outgoing and incoming pages share one cell and
+                overlap during the transition, instead of stacking vertically in
+                normal flow (which pushed the new page below the fold). */}
+            <div className="grid flex-1">
+              <AnimatePresence custom={direction} initial={false}>
+                <motion.div
+                  key={pathname}
+                  custom={direction}
+                  variants={variants}
+                  initial={reduced ? false : 'enter'}
+                  animate="center"
+                  exit={reduced ? { opacity: 0 } : 'exit'}
+                  transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  className="col-start-1 row-start-1 flex min-w-0 flex-col"
+                >
+                  {children}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </PullToRefresh>
         </RefreshControlContext.Provider>
       </div>

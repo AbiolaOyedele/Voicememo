@@ -50,6 +50,9 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
       return
     }
     startY.current = e.touches[0]?.clientY ?? null
+    // Pick the Humpty line up front so it's already there as the user pulls,
+    // sitting under the spinner — not only after they release.
+    setMessage(REFRESH_MESSAGES[Math.floor(Math.random() * REFRESH_MESSAGES.length)] as string)
   }
 
   function onTouchMove(e: ReactTouchEvent): void {
@@ -74,7 +77,6 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
         window.location.reload()
         return // page is reloading — nothing left to reset
       }
-      setMessage(REFRESH_MESSAGES[Math.floor(Math.random() * REFRESH_MESSAGES.length)] as string)
       try {
         await onRefresh()
       } finally {
@@ -88,12 +90,19 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
 
   const progress = Math.min(pull / TRIGGER_DISTANCE, 1)
 
+  const showMessage = !updateAvailable && (refreshing || progress > 0.4)
+
   return (
-    <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+    <div
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      className="flex flex-1 flex-col"
+    >
       <motion.div
         animate={{ height: refreshing ? TRIGGER_DISTANCE : pull }}
         transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 34 }}
-        className="pointer-events-none flex flex-col items-center justify-center gap-0.5 overflow-hidden"
+        className="pointer-events-none flex shrink-0 flex-col items-center justify-center gap-1 overflow-hidden"
         aria-hidden={!refreshing}
       >
         <div style={{ opacity: refreshing ? 1 : progress }}>
@@ -102,10 +111,12 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
             className={refreshing || updateAvailable ? 'text-flame' : 'text-muted'}
           />
         </div>
-        {refreshing ? (
-          <span className="text-muted text-[11px]">{message}</span>
-        ) : updateAvailable && progress > 0.4 ? (
+        {updateAvailable && progress > 0.4 ? (
           <span className="text-flame text-[11px]">Release to update</span>
+        ) : showMessage ? (
+          <span className="text-muted px-6 text-center text-[11px]" style={{ opacity: progress }}>
+            {message}
+          </span>
         ) : null}
       </motion.div>
       {children}
