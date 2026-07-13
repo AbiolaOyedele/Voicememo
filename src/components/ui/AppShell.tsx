@@ -28,10 +28,12 @@ const PROJECTION_MS = 90 // how far ahead (ms) we project the fling to decide th
 const COMMIT_FRACTION = 0.5 // projected travel past this fraction of a page width flips the page
 const RUBBER_C = 0.55 // Apple's rubber-band constant for resistance past the first/last tab
 
-// A velocity-seeded spring is what makes the release continue the finger's
-// motion seamlessly (see WWDC "Designing Fluid Interfaces"). Stiff + well-damped
-// so it settles quickly without a bouncy overshoot.
-const SPRING = { type: 'spring' as const, stiffness: 520, damping: 44 }
+// iOS paging has ZERO bounce — a smooth decelerating glide to the exact page,
+// not a spring that overshoots and wobbles. `bounce: 0` makes it critically
+// damped (no overshoot) while still continuing the finger's release velocity,
+// so the handoff stays seamless (see WWDC "Designing Fluid Interfaces").
+// `visualDuration` sets how quickly it visually arrives, independent of velocity.
+const SPRING = { type: 'spring' as const, bounce: 0, visualDuration: 0.3 }
 
 /** Apple's rubber-band resistance: pushback grows the further you pull past an edge. */
 function rubberband(overshoot: number, dimension: number): number {
