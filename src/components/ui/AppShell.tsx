@@ -23,14 +23,18 @@ function tabIndex(pathname: string): number {
   return ORDER.findIndex((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
 
-const SWIPE_DISTANCE = 60 // px — drag distance that commits a tab change
+const SWIPE_DISTANCE = 56 // px — drag distance that commits a tab change
+const SWIPE_VELOCITY = 0.45 // px/ms — a flick this fast commits even under the distance
 const DIRECTION_LOCK_PX = 10 // px of movement before we decide horizontal-swipe vs vertical-scroll
 const EDGE_RESISTANCE = 0.3 // how much the drag slows past the first/last tab
 
+// Committed swipes slide the full width so the new page reads as continuously
+// sliding in from the edge (native feel) rather than a small fade-in. No
+// opacity change — a pure slide is what makes it feel like one surface moving.
 const variants = {
-  enter: (direction: number) => ({ opacity: 0, x: direction >= 0 ? 32 : -32 }),
-  center: { opacity: 1, x: 0 },
-  exit: (direction: number) => ({ opacity: 0, x: direction >= 0 ? -32 : 32 }),
+  enter: (direction: number) => ({ x: direction >= 0 ? '100%' : '-100%' }),
+  center: { x: '0%' },
+  exit: (direction: number) => ({ x: direction >= 0 ? '-100%' : '100%' }),
 }
 
 /**
@@ -84,6 +88,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     prevIndex.current = idx
   }, [pathname])
 
+  // Prefetch the adjacent tabs so a committed swipe navigates instantly instead
+  // of stalling on an RSC round-trip after the finger lifts — the single
+  // biggest factor in the swipe feeling snappy rather than laggy.
+  useEffect(() => {
+    const idx = tabIndex(pathname)
+    if (idx === -1) return
+    if (idx > 0) router.prefetch(ORDER[idx - 1] as string)
+    if (idx < ORDER.length - 1) router.prefetch(ORDER[idx + 1] as string)
+  }, [pathname, router])
+
   useEffect(() => {
     if (reduced) return
     const el = containerRef.current
@@ -94,11 +108,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     let decided = false // have we determined horizontal vs vertical yet?
     let swiping = false // confirmed horizontal swipe in progress
     let dx = 0
+    let lastX = 0 // last sampled x, for velocity
+    let lastT = 0 // timestamp of that sample
+    let velocity = 0 // px/ms, signed — recent finger speed for flick detection
 
     function resetStyle(): void {
       if (!el) return
       el.style.transition = ''
       el.style.transform = ''
+      el.style.willChange = ''
     }
 
     function onStart(e: TouchEvent): void {
@@ -106,6 +124,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       if (!t) return
       startX = t.clientX
       startY = t.clientY
+      lastX = t.clientX
+      lastT = e.timeStamp
+      velocity = 0
       decided = false
       swiping = false
       if (el) el.style.transition = ''
@@ -122,14 +143,24 @@ export function AppShell({ children }: { children: ReactNode }) {
         decided = true
         swiping = Math.abs(moveX) > Math.abs(moveY)
         if (!swiping) return // vertical gesture — leave it to normal page scroll
+        // Promote to its own compositor layer for the duration of the drag.
+        el.style.willChange = 'transform'
       }
       if (!swiping) return
+
+      // Track instantaneous velocity from the most recent sample so a fast flick
+      // commits even when it doesn't clear the distance threshold.
+      const dt = e.timeStamp - lastT
+      if (dt > 0) velocity = (t.clientX - lastX) / dt
+      lastX = t.clientX
+      lastT = e.timeStamp
 
       const idx = tabIndex(pathname)
       const atStart = idx <= 0 && moveX > 0
       const atEnd = idx >= ORDER.length - 1 && moveX < 0
       dx = atStart || atEnd ? moveX * EDGE_RESISTANCE : moveX
-      el.style.transform = `translateX(${dx}px)`
+      // translate3d + rounding keeps the transform on the GPU and pixel-snapped.
+      el.style.transform = `translate3d(${Math.round(dx)}px,0,0)`
     }
 
     function onEnd(): void {
@@ -140,8 +171,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       swiping = false
       decided = false
       const idx = tabIndex(pathname)
-      const forward = dx < -SWIPE_DISTANCE
-      const back = dx > SWIPE_DISTANCE
+      // Commit on either enough distance OR a fast flick in that direction.
+      const forward = dx < 0 && (dx < -SWIPE_DISTANCE || velocity < -SWIPE_VELOCITY)
+      const back = dx > 0 && (dx > SWIPE_DISTANCE || velocity > SWIPE_VELOCITY)
 
       if (forward && idx < ORDER.length - 1) {
         setDirection(1)
@@ -153,9 +185,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         router.push(ORDER[idx - 1] as string)
       } else if (el) {
         // Didn't clear the commit threshold — spring back to center.
-        el.style.transition = 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)'
-        el.style.transform = 'translateX(0px)'
-        window.setTimeout(resetStyle, 220)
+        el.style.transition = 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)'
+        el.style.transform = 'translate3d(0,0,0)'
+        window.setTimeout(resetStyle, 300)
       }
     }
 
