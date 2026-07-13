@@ -5,9 +5,9 @@ import { jsonOk, jsonError, toErrorResponse } from '@/lib/http'
 
 // POST /api/v1/feedback
 // Auth: optional (guests may submit too).
-// Stores an in-app feedback submission as the durable record.
+// Delivers an in-app feedback submission to the feedback inbox via Resend.
 // Body: { type: 'bug'|'feature'|'other', message, page_url?, app_version? }
-// Returns: { data: { id } }
+// Returns: { data: { ok: true } }
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: unknown
   try {
@@ -18,11 +18,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   try {
     const user = await getOptionalUser()
-    const feedback = await submitFeedback(
+    await submitFeedback(
       { userId: user?.id ?? null, userAgent: req.headers.get('user-agent') },
       body,
     )
-    return jsonOk({ id: feedback.id }, 201)
+    return jsonOk({ ok: true }, 201)
   } catch (error) {
     return toErrorResponse(error)
   }

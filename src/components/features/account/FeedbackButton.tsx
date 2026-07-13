@@ -20,7 +20,7 @@ const APP_VERSION = (changelogData as { version?: string }[])[0]?.version ?? nul
 
 /**
  * Give-feedback row + dialog. Sends the message straight to our feedback inbox
- * (POST /api/v1/feedback → stored server-side) — no email app, no redirect.
+ * (POST /api/v1/feedback → emailed to us via Resend) — no email app, no redirect.
  * Works for guests and signed-in users alike. Shows an in-app confirmation on
  * success and a plain-English retry on failure.
  */

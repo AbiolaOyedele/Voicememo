@@ -29,6 +29,16 @@ const serverSchema = z.object({
   DEEPGRAM_API_KEY: z.string().min(1),
   ANTHROPIC_API_KEY: z.string().min(1),
 
+  // Email (Resend) — feedback delivery. Optional so local/dev without a key
+  // doesn't hard-fail boot; the feedback service reports a clear error when the
+  // key is missing at send time.
+  RESEND_API_KEY: z.string().min(1).optional(),
+  // Sender identity, e.g. `Dumpty <feedback@theruff.agency>`. Must be a
+  // verified Resend domain. Falls back to Resend's shared onboarding sender.
+  FEEDBACK_FROM_EMAIL: z.string().min(1).default('Dumpty <onboarding@resend.dev>'),
+  // Destination inbox for feedback submissions.
+  FEEDBACK_TO_EMAIL: z.string().email().optional(),
+
   // App
   NEXT_PUBLIC_SITE_URL: z.string().url(),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

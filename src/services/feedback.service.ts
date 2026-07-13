@@ -1,8 +1,6 @@
 import { z } from 'zod'
 import { AppError } from '@/lib/errors'
-import { createAdminSupabaseClient } from '@/lib/supabase-admin'
-import { insertFeedback } from '@/repositories/feedback.repository'
-import type { Feedback } from '@/types/feedback'
+import { sendFeedbackNotification } from '@/services/email.service'
 
 const submitSchema = z.object({
   type: z.enum(['bug', 'feature', 'other']),
@@ -19,15 +17,15 @@ export interface SubmitFeedbackContext {
 }
 
 /**
- * Validates and stores a feedback submission. Writes through the service-role
- * client so guests (no auth session) can submit too; the stored row is the
- * durable record the admin reads. Trust for user_id/user_agent comes from the
- * request context, never the client body.
+ * Validates a feedback submission and delivers it to the feedback inbox via
+ * Resend email. Trust for user_id/user_agent comes from the request context,
+ * never the client body. Throws {@link AppError} on invalid input or a failed
+ * send so the client can surface a plain-English retry.
  */
 export async function submitFeedback(
   ctx: SubmitFeedbackContext,
   input: unknown,
-): Promise<Feedback> {
+): Promise<void> {
   const parsed = submitSchema.safeParse(input)
   if (!parsed.success) {
     throw new AppError(
@@ -38,13 +36,12 @@ export async function submitFeedback(
   }
   const { type, message, page_url, app_version } = parsed.data
 
-  const db = createAdminSupabaseClient()
-  return insertFeedback(db, {
-    user_id: ctx.userId,
+  await sendFeedbackNotification({
     type,
     message,
-    page_url: page_url ?? null,
-    app_version: app_version ?? null,
-    user_agent: ctx.userAgent,
+    userId: ctx.userId,
+    pageUrl: page_url ?? null,
+    appVersion: app_version ?? null,
+    userAgent: ctx.userAgent,
   })
 }
