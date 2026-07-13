@@ -77,15 +77,11 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
     if (startY.current === null) return
     startY.current = null
     if (pull >= TRIGGER_DISTANCE) {
-      setRefreshing(true) // show the Dumpty logo overlay
+      setRefreshing(true) // show the Dumpty logo + spinner overlay
       setPull(TRIGGER_DISTANCE)
-      // Flush any registered client refetch, then hard-reload so the refresh is
-      // real and unmistakable. The splash flag keeps the logo up across reload.
-      try {
-        sessionStorage.setItem(REFRESH_FLAG, '1')
-      } catch {
-        /* private mode — non-fatal */
-      }
+      // Flush any registered client refetch, then hard-reload. We intentionally
+      // do NOT set the splash flag here: this overlay (logo + spinner) is the
+      // single refresh visual — the post-reload Splash would be a second logo.
       void onRefresh().catch(() => {})
       window.setTimeout(() => window.location.reload(), 600)
     } else {
