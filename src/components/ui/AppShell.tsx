@@ -1,9 +1,9 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { motion, useMotionValue, animate, useReducedMotion } from 'framer-motion'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { useGuestMigration } from '@/hooks/useGuestMigration'
 import {
@@ -11,44 +11,64 @@ import {
   type RefreshControl,
   type RefreshHandler,
 } from '@/hooks/useRefreshControl'
-import { TabBar } from './TabBar'
+import { TabBar, TABS } from './TabBar'
 import { Splash } from './Splash'
 import { InstallPrompt } from './InstallPrompt'
 import { PullToRefresh } from './PullToRefresh'
 
 /** Tab order for swipe navigation: Library ← Record → Account. */
-const ORDER = ['/library', '/record', '/account']
+const ORDER = TABS.map((t) => t.href)
 
 function tabIndex(pathname: string): number {
   return ORDER.findIndex((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
 
-const SWIPE_DISTANCE = 56 // px — drag distance that commits a tab change
-const SWIPE_VELOCITY = 0.45 // px/ms — a flick this fast commits even under the distance
-const DIRECTION_LOCK_PX = 10 // px of movement before we decide horizontal-swipe vs vertical-scroll
-const EDGE_RESISTANCE = 0.3 // how much the drag slows past the first/last tab
+const DIRECTION_LOCK_PX = 10 // px of movement before we commit to horizontal-swipe vs vertical-scroll
+const PROJECTION_MS = 90 // how far ahead (ms) we project the fling to decide the landing page
+const COMMIT_FRACTION = 0.5 // projected travel past this fraction of a page width flips the page
+const RUBBER_C = 0.55 // Apple's rubber-band constant for resistance past the first/last tab
 
-// Incoming page fades in with a short, cheap slide. A full-width slide of a
-// freshly-mounted route (the record page mounts a live waveform) janks on the
-// first frame, so we keep the transform tiny and let opacity carry the feel.
-const variants = {
-  enter: (direction: number) => ({ opacity: 0, x: direction >= 0 ? 20 : -20 }),
-  center: { opacity: 1, x: 0 },
-  exit: (direction: number) => ({ opacity: 0, x: direction >= 0 ? -20 : 20 }),
+// A velocity-seeded spring is what makes the release continue the finger's
+// motion seamlessly (see WWDC "Designing Fluid Interfaces"). Stiff + well-damped
+// so it settles quickly without a bouncy overshoot.
+const SPRING = { type: 'spring' as const, stiffness: 520, damping: 44 }
+
+/** Apple's rubber-band resistance: pushback grows the further you pull past an edge. */
+function rubberband(overshoot: number, dimension: number): number {
+  const x = Math.abs(overshoot)
+  const resisted = (x * dimension * RUBBER_C) / (dimension + RUBBER_C * x)
+  return Math.sign(overshoot) * resisted
+}
+
+/** Faint destination hint shown in the neighbour cell the finger reveals mid-swipe. */
+function TabPlaceholder({ index }: { index: number }) {
+  const tab = TABS[index]
+  if (!tab) return <div className="bg-canvas h-full w-full" />
+  const { Icon, label } = tab
+  return (
+    <div className="bg-canvas text-muted flex h-full w-full flex-col items-center justify-center gap-3">
+      <Icon size={28} />
+      <span className="text-sm">{label}</span>
+    </div>
+  )
 }
 
 /**
- * Client shell for the three main tabs. Swipe navigation uses plain,
- * `{ passive: true }` touch listeners — never Framer Motion's `drag` prop.
- * `drag` intercepts pointer events at the container level, which reliably
- * breaks normal taps on buttons nested inside it (a well-known Framer Motion
- * gotcha, on both touch and mouse). Passive listeners only ever *observe*
- * touches, so ordinary clicks/taps on page content are never affected.
+ * Client shell for the three main tabs, with an iOS-style paged swipe.
  *
- * A swipe only starts moving content once it's clearly horizontal
- * (DIRECTION_LOCK_PX), so vertical scrolling and simple taps are untouched.
- * Also renders the fixed bottom TabBar, and flushes the offline recording
- * queue / migrates guest notes once signed in.
+ * The three tabs live in a horizontal track: the centre cell is the live route,
+ * the neighbours are faint placeholders the finger reveals (the Account tab is a
+ * server component, so the real adjacent pages can't be mounted client-side).
+ * The track follows the finger 1:1 via a Framer motion value — never the `drag`
+ * prop, which intercepts pointer events and breaks taps on nested buttons.
+ * Listeners are `{ passive: true }`, so ordinary taps and vertical scrolling are
+ * untouched; a swipe only engages once it's clearly horizontal.
+ *
+ * On release we project the fling (velocity × lookahead) to pick the landing
+ * page and spring the track there seeded with the finger's velocity — a single
+ * continuous motion, not a reset-then-animate. Past the first/last tab the drag
+ * meets Apple's rubber-band resistance. The route changes only after the spring
+ * lands, so navigation cost never stutters the animation.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -57,9 +77,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   useOfflineSync()
   useGuestMigration()
 
-  const containerRef = useRef<HTMLDivElement>(null)
-  const prevIndex = useRef(tabIndex(pathname))
-  const [direction, setDirection] = useState(0)
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+  const widthRef = useRef(0)
+  const x = useMotionValue(0)
+  const animRef = useRef<{ stop: () => void } | null>(null)
 
   // Single app-wide pull-to-refresh. Pages that fetch client-side register
   // their own refetch via useRegisterRefresh; everything else (e.g. the
@@ -80,17 +102,32 @@ export function AppShell({ children }: { children: ReactNode }) {
     else router.refresh()
   }, [router])
 
-  useEffect(() => {
-    const idx = tabIndex(pathname)
-    if (idx !== -1 && prevIndex.current !== -1 && idx !== prevIndex.current) {
-      setDirection(idx > prevIndex.current ? 1 : -1)
+  // Measure the viewport so cells are exactly one screen wide and the centre
+  // cell rests at x = -width. Re-measured on resize/orientation change.
+  useLayoutEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+    const measure = (): void => {
+      const w = el.clientWidth
+      if (w === 0) return
+      widthRef.current = w
+      setWidth(w)
+      x.set(-w) // keep the centre cell centred
     }
-    prevIndex.current = idx
-  }, [pathname])
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [x])
 
-  // Prefetch the adjacent tabs so a committed swipe navigates instantly instead
-  // of stalling on an RSC round-trip after the finger lifts — the single
-  // biggest factor in the swipe feeling snappy rather than laggy.
+  // Snap the centre cell back into view instantly whenever the route changes —
+  // the just-navigated page replaces the placeholder at rest, no visible slide.
+  useLayoutEffect(() => {
+    if (widthRef.current > 0) x.set(-widthRef.current)
+  }, [pathname, x])
+
+  // Prefetch adjacent tabs so a committed swipe navigates instantly instead of
+  // stalling on an RSC round-trip. (No-op in dev; matters in production.)
   useEffect(() => {
     const idx = tabIndex(pathname)
     if (idx === -1) return
@@ -100,41 +137,36 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (reduced) return
-    const el = containerRef.current
+    const el = viewportRef.current
     if (!el) return
 
     let startX = 0
     let startY = 0
-    let decided = false // have we determined horizontal vs vertical yet?
+    let decided = false // horizontal vs vertical resolved yet?
     let swiping = false // confirmed horizontal swipe in progress
-    let dx = 0
-    let lastX = 0 // last sampled x, for velocity
-    let lastT = 0 // timestamp of that sample
-    let velocity = 0 // px/ms, signed — recent finger speed for flick detection
-
-    function resetStyle(): void {
-      if (!el) return
-      el.style.transition = ''
-      el.style.transform = ''
-      el.style.willChange = ''
-    }
+    let dx = 0 // signed drag offset from centre
+    let lastX = 0
+    let lastT = 0
+    let velocity = 0 // px/ms, signed — recent finger speed
 
     function onStart(e: TouchEvent): void {
       const t = e.touches[0]
       if (!t) return
+      animRef.current?.stop() // grab an in-flight settle mid-air
       startX = t.clientX
       startY = t.clientY
       lastX = t.clientX
       lastT = e.timeStamp
       velocity = 0
+      dx = 0
       decided = false
       swiping = false
-      if (el) el.style.transition = ''
     }
 
     function onMove(e: TouchEvent): void {
       const t = e.touches[0]
-      if (!t || !el) return
+      const w = widthRef.current
+      if (!t || w === 0) return
       const moveX = t.clientX - startX
       const moveY = t.clientY - startY
 
@@ -143,93 +175,117 @@ export function AppShell({ children }: { children: ReactNode }) {
         decided = true
         swiping = Math.abs(moveX) > Math.abs(moveY)
         if (!swiping) return // vertical gesture — leave it to normal page scroll
-        // Promote to its own compositor layer for the duration of the drag.
-        el.style.willChange = 'transform'
       }
       if (!swiping) return
 
-      // Track instantaneous velocity from the most recent sample so a fast flick
-      // commits even when it doesn't clear the distance threshold.
       const dt = e.timeStamp - lastT
       if (dt > 0) velocity = (t.clientX - lastX) / dt
       lastX = t.clientX
       lastT = e.timeStamp
 
       const idx = tabIndex(pathname)
-      const atStart = idx <= 0 && moveX > 0
-      const atEnd = idx >= ORDER.length - 1 && moveX < 0
-      dx = atStart || atEnd ? moveX * EDGE_RESISTANCE : moveX
-      // translate3d + rounding keeps the transform on the GPU and pixel-snapped.
-      el.style.transform = `translate3d(${Math.round(dx)}px,0,0)`
+      const hasPrev = idx > 0
+      const hasNext = idx >= 0 && idx < ORDER.length - 1
+      // Free 1:1 tracking toward a real neighbour; rubber-band toward an edge.
+      dx = moveX
+      if ((moveX > 0 && !hasPrev) || (moveX < 0 && !hasNext)) dx = rubberband(moveX, w)
+      x.set(-w + dx)
     }
 
     function onEnd(): void {
-      if (!swiping) {
+      const w = widthRef.current
+      if (!swiping || w === 0) {
         decided = false
+        swiping = false
         return
       }
       swiping = false
       decided = false
-      const idx = tabIndex(pathname)
-      // Commit on either enough distance OR a fast flick in that direction.
-      const forward = dx < 0 && (dx < -SWIPE_DISTANCE || velocity < -SWIPE_VELOCITY)
-      const back = dx > 0 && (dx > SWIPE_DISTANCE || velocity > SWIPE_VELOCITY)
 
-      if (forward && idx < ORDER.length - 1) {
-        setDirection(1)
-        resetStyle() // hand off cleanly — the page transition below takes it from here
-        router.push(ORDER[idx + 1] as string)
-      } else if (back && idx > 0) {
-        setDirection(-1)
-        resetStyle()
-        router.push(ORDER[idx - 1] as string)
-      } else if (el) {
-        // Didn't clear the commit threshold — spring back to center.
-        el.style.transition = 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)'
-        el.style.transform = 'translate3d(0,0,0)'
-        window.setTimeout(resetStyle, 300)
+      const idx = tabIndex(pathname)
+      // Project where the fling would land, then pick the destination page.
+      const projected = dx + velocity * PROJECTION_MS
+      const threshold = w * COMMIT_FRACTION
+      const goNext = projected < -threshold && idx >= 0 && idx < ORDER.length - 1
+      const goPrev = projected > threshold && idx > 0
+
+      const velocityPxS = velocity * 1000 // Framer seeds spring velocity in px/s
+      const settle = (target: number, onDone?: () => void): void => {
+        animRef.current = animate(x, target, {
+          ...SPRING,
+          velocity: velocityPxS,
+          ...(onDone ? { onComplete: onDone } : {}),
+        })
+      }
+
+      if (goNext) {
+        settle(-2 * w, () => router.push(ORDER[idx + 1] as string))
+      } else if (goPrev) {
+        settle(0, () => router.push(ORDER[idx - 1] as string))
+      } else {
+        settle(-w) // didn't clear the projection threshold — spring home
       }
     }
 
     el.addEventListener('touchstart', onStart, { passive: true })
     el.addEventListener('touchmove', onMove, { passive: true })
     el.addEventListener('touchend', onEnd, { passive: true })
+    el.addEventListener('touchcancel', onEnd, { passive: true })
     return () => {
       el.removeEventListener('touchstart', onStart)
       el.removeEventListener('touchmove', onMove)
       el.removeEventListener('touchend', onEnd)
+      el.removeEventListener('touchcancel', onEnd)
     }
-  }, [pathname, router, reduced])
+  }, [pathname, router, reduced, x])
+
+  const idx = tabIndex(pathname)
+  const showTrack = !reduced && width > 0
+
+  const center = (
+    <div className="flex min-w-0 flex-1 flex-col pb-24">
+      <PullToRefresh onRefresh={onRefresh} disabled={refreshDisabled}>
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15 }}
+          className="flex min-w-0 flex-1 flex-col"
+        >
+          {children}
+        </motion.div>
+      </PullToRefresh>
+    </div>
+  )
 
   return (
     <>
       <Splash />
       <div
-        ref={containerRef}
-        className="flex min-h-[100dvh] flex-1 flex-col touch-pan-y overflow-x-hidden pb-24"
+        ref={viewportRef}
+        className="relative flex min-h-[100dvh] flex-1 flex-col touch-pan-y overflow-x-hidden"
       >
         <RefreshControlContext.Provider value={refreshControl}>
-          <PullToRefresh onRefresh={onRefresh} disabled={refreshDisabled}>
-            {/* Grid stack: the outgoing and incoming pages share one cell and
-                overlap during the transition, instead of stacking vertically in
-                normal flow (which pushed the new page below the fold). */}
-            <div className="grid flex-1">
-              <AnimatePresence custom={direction} initial={false}>
-                <motion.div
-                  key={pathname}
-                  custom={direction}
-                  variants={variants}
-                  initial={reduced ? false : 'enter'}
-                  animate="center"
-                  exit={reduced ? { opacity: 0 } : 'exit'}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  className="col-start-1 row-start-1 flex min-w-0 flex-col"
-                >
-                  {children}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </PullToRefresh>
+          {showTrack ? (
+            <motion.div className="flex flex-1" style={{ x }}>
+              <div style={{ width }} className="shrink-0">
+                {idx > 0 ? <TabPlaceholder index={idx - 1} /> : <div className="bg-canvas h-full" />}
+              </div>
+              <div style={{ width }} className="flex shrink-0 flex-col">
+                {center}
+              </div>
+              <div style={{ width }} className="shrink-0">
+                {idx >= 0 && idx < ORDER.length - 1 ? (
+                  <TabPlaceholder index={idx + 1} />
+                ) : (
+                  <div className="bg-canvas h-full" />
+                )}
+              </div>
+            </motion.div>
+          ) : (
+            // Fallback before measurement / with reduced motion: centre only.
+            center
+          )}
         </RefreshControlContext.Provider>
       </div>
       <TabBar />
