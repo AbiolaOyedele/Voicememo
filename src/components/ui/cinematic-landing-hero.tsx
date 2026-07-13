@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { Mic, Sparkles, ListTree, ListChecks, List, User, type LucideIcon } from 'lucide-react'
 import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb'
+import { ThoughtStream } from '@/components/ui/thought-stream'
 import { cn } from '@/lib/utils'
 
 if (typeof window !== 'undefined') {
@@ -137,15 +138,36 @@ const INJECTED_STYLES = `
       from { clip-path: inset(0 100% 0 0); }
       to   { clip-path: inset(0 0% 0 0); }
   }
+  .hero-logo { animation: hero-rise 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0s both; }
   .text-track { animation: hero-rise 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
   .text-days { animation: hero-wipe 1.3s cubic-bezier(0.76, 0, 0.24, 1) 0.9s both; }
   .hero-cta { animation: hero-rise 1.4s cubic-bezier(0.16, 1, 0.3, 1) 1.4s both; }
+
+  /* "Typical." settles as silver, wipes out, then wipes back in as the
+     flame-orange logo mark. */
+  .typical-flame {
+      color: var(--color-flame);
+      -webkit-text-fill-color: var(--color-flame);
+      background: none;
+  }
+  @keyframes typical-wipe-out {
+      from { clip-path: inset(0 0% 0 0); }
+      to   { clip-path: inset(0 100% 0 0); }
+  }
+  @keyframes typical-wipe-in {
+      from { clip-path: inset(0 100% 0 0); }
+      to   { clip-path: inset(0 0% 0 0); }
+  }
+  .typical-out { animation: typical-wipe-out 0.45s cubic-bezier(0.76, 0, 0.24, 1) both; }
+  .typical-in  { animation: typical-wipe-in 0.5s cubic-bezier(0.76, 0, 0.24, 1) both; }
 `
 
 export interface CinematicHeroProps extends React.HTMLAttributes<HTMLDivElement> {
   brandName?: string
   tagline1?: string
   tagline2?: string
+  /** Trailing word of tagline 2 that morphs into the flame-orange logo mark. */
+  highlightWord?: string
   cardHeading?: string
   cardDescription?: React.ReactNode
   ctaHeading?: string
@@ -157,7 +179,8 @@ export interface CinematicHeroProps extends React.HTMLAttributes<HTMLDivElement>
 export function CinematicHero({
   brandName = 'Dumpty',
   tagline1 = 'You had a great idea.',
-  tagline2 = 'Then you lost it. Typical.',
+  tagline2 = 'Then you lost it.',
+  highlightWord = 'Typical.',
   cardHeading = 'Raw thoughts in, tidy ideas out.',
   cardDescription = (
     <>
@@ -176,6 +199,18 @@ export function CinematicHero({
   const mainCardRef = useRef<HTMLDivElement>(null)
   const mockupRef = useRef<HTMLDivElement>(null)
   const requestRef = useRef<number>(0)
+
+  // "Typical." settles as silver, then (after a beat) wipes out and wipes back
+  // in as the flame-orange logo mark. 'in' → 'out' → 'flame'.
+  const [typicalPhase, setTypicalPhase] = useState<'in' | 'out' | 'flame'>('in')
+  useEffect(() => {
+    const t = setTimeout(() => setTypicalPhase('out'), 2400)
+    return () => clearTimeout(t)
+  }, [])
+  const handleTypicalAnimEnd = () => {
+    // The out-wipe just finished (word fully hidden) — swap style, wipe back in.
+    setTypicalPhase((p) => (p === 'out' ? 'flame' : p))
+  }
 
   // 1. High-performance mouse interaction (requestAnimationFrame throttled)
   useEffect(() => {
@@ -255,7 +290,7 @@ export function CinematicHero({
 
       scrollTl
         .to(
-          ['.hero-text-wrapper', '.bg-grid-theme'],
+          ['.hero-text-wrapper', '.bg-grid-theme', '.thought-stream'],
           { scale: 1.15, filter: 'blur(20px)', opacity: 0.2, ease: 'power2.inOut', duration: 2 },
           0
         )
@@ -380,13 +415,33 @@ export function CinematicHero({
       <div className="film-grain" aria-hidden="true" />
       <div className="bg-grid-theme absolute inset-0 z-0 pointer-events-none opacity-50" aria-hidden="true" />
 
+      {/* AMBIENT LAYER: half-formed thoughts drifting behind the hero text */}
+      <ThoughtStream className="thought-stream z-[5]" />
+
       {/* BACKGROUND LAYER: Hero texts + opening CTA */}
       <div className="hero-text-wrapper transform-style-3d absolute z-10 flex w-screen flex-col items-center justify-center px-4 text-center will-change-transform">
+        <span
+          className="hero-logo text-flame mb-3 block text-2xl leading-none sm:text-3xl md:mb-4 md:text-4xl"
+          style={{ fontFamily: 'var(--font-logo)' }}
+        >
+          {brandName}
+        </span>
         <h1 className="text-track text-3d-matte mb-2 text-4xl font-bold tracking-tight sm:text-5xl md:text-7xl lg:text-[6rem]">
           {tagline1}
         </h1>
-        <h1 className="text-days text-silver-matte text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-7xl lg:text-[6rem]">
-          {tagline2}
+        <h1 className="text-days text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-7xl lg:text-[6rem]">
+          <span className="text-silver-matte">{tagline2} </span>
+          <span
+            onAnimationEnd={handleTypicalAnimEnd}
+            className={cn(
+              'inline-block',
+              typicalPhase === 'flame' ? 'typical-flame typical-in' : 'text-silver-matte',
+              typicalPhase === 'out' && 'typical-out'
+            )}
+            style={typicalPhase === 'flame' ? { fontFamily: 'var(--font-logo)' } : undefined}
+          >
+            {highlightWord}
+          </span>
         </h1>
         <div className="hero-cta pointer-events-auto mt-10">
           <a
