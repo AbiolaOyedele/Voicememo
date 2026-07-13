@@ -3,20 +3,25 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Logo } from './Logo'
+import { REFRESH_FLAG } from './PullToRefresh'
 
 const SEEN_KEY = 'dumpty_splash_seen'
 
 /**
- * Brand loading screen shown once when the app is opened (per tab session).
- * Covers the UI with the Dumpty wordmark, then fades away. Runs inside the
- * signed-in shell, so it only greets an authenticated (or guest) session.
+ * Brand loading screen shown once when the app is opened (per tab session), and
+ * again right after a pull-to-refresh reload (via {@link REFRESH_FLAG}) so the
+ * Dumpty logo bridges the reload and the user clearly sees it happened. Covers
+ * the UI with the Dumpty wordmark, then fades away.
  */
 export function Splash() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    // Only on a fresh app open — not on every client-side navigation.
-    if (sessionStorage.getItem(SEEN_KEY)) return
+    // A pull-to-refresh reload always re-shows the splash, even within a session.
+    const afterRefresh = sessionStorage.getItem(REFRESH_FLAG)
+    if (afterRefresh) sessionStorage.removeItem(REFRESH_FLAG)
+    // Otherwise only on a fresh app open — not on every client-side navigation.
+    if (!afterRefresh && sessionStorage.getItem(SEEN_KEY)) return
     sessionStorage.setItem(SEEN_KEY, '1')
     setVisible(true)
     const timer = setTimeout(() => setVisible(false), 1400)

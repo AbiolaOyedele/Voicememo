@@ -31,7 +31,7 @@ export default async function AccountPage() {
             Sign in
           </Link>
         </Reveal>
-        <Reveal delay={0.1} className="flex flex-col gap-1">
+        <Reveal delay={0.1} className="flex items-center justify-between gap-3">
           <ComingSoonSection />
           <ChangelogSection />
         </Reveal>
@@ -72,7 +72,7 @@ export default async function AccountPage() {
         </section>
       </Reveal>
 
-      <Reveal delay={0.15} className="flex flex-col gap-1">
+      <Reveal delay={0.15} className="flex items-center justify-between gap-3">
         <ComingSoonSection />
         <ChangelogSection />
       </Reveal>

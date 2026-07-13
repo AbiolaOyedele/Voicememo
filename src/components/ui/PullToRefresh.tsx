@@ -2,12 +2,20 @@
 
 import { useRef, useState, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { useUpdatePrompt } from '@/hooks/useUpdatePrompt'
 import { Spinner } from './Spinner'
+import { Logo } from './Logo'
+import { Portal } from './Portal'
 
 const TRIGGER_DISTANCE = 64 // px of pull that commits a refresh
 const MAX_PULL = 96 // px visual cap
 const RESISTANCE = 0.45 // how much the pull slows past the trigger distance
+
+/**
+ * sessionStorage flag set just before a pull-to-refresh reload so the brand
+ * splash shows again on the fresh load, bridging the reload with the Dumpty
+ * logo so it's obvious the app actually reloaded. Read + cleared by Splash.
+ */
+export const REFRESH_FLAG = 'dumpty_refreshing'
 
 /** A random one shows up each time you refresh — small, on-brand fun. */
 const REFRESH_MESSAGES = [
@@ -21,7 +29,7 @@ interface PullToRefreshProps {
   onRefresh: () => Promise<void>
   children: ReactNode
   /** Disables the gesture entirely — e.g. mid-recording, where a surprise
-   * reload (from a pending update) would destroy an in-progress take. */
+   * reload would destroy an in-progress take. */
   disabled?: boolean
 }
 
@@ -32,13 +40,12 @@ interface PullToRefreshProps {
  * restores an equivalent gesture. Only engages when the page is already
  * scrolled to the top, so it never fights normal scrolling.
  *
- * Doubles as the update mechanism: when a newer deploy is live
- * (useUpdatePrompt), pulling down reloads the page instead of calling
- * `onRefresh` — no separate "new version available" banner needed.
+ * On commit it does a real, full page reload (not a soft data refetch), behind
+ * a full-screen Dumpty logo so the user can clearly see the app reloaded — and
+ * a reload always picks up a newer deploy if one is live.
  */
 export function PullToRefresh({ onRefresh, children, disabled = false }: PullToRefreshProps) {
   const reduced = useReducedMotion()
-  const updateAvailable = useUpdatePrompt()
   const [pull, setPull] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const [message, setMessage] = useState('')
@@ -50,8 +57,7 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
       return
     }
     startY.current = e.touches[0]?.clientY ?? null
-    // Pick the Humpty line up front so it's already there as the user pulls,
-    // sitting under the spinner — not only after they release.
+    // Pick the Humpty line up front so it's already there as the user pulls.
     setMessage(REFRESH_MESSAGES[Math.floor(Math.random() * REFRESH_MESSAGES.length)] as string)
   }
 
@@ -67,30 +73,28 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
     setPull(Math.min(eased, MAX_PULL))
   }
 
-  async function onTouchEnd(): Promise<void> {
+  function onTouchEnd(): void {
     if (startY.current === null) return
     startY.current = null
     if (pull >= TRIGGER_DISTANCE) {
-      setRefreshing(true)
+      setRefreshing(true) // show the Dumpty logo overlay
       setPull(TRIGGER_DISTANCE)
-      if (updateAvailable) {
-        window.location.reload()
-        return // page is reloading — nothing left to reset
-      }
+      // Flush any registered client refetch, then hard-reload so the refresh is
+      // real and unmistakable. The splash flag keeps the logo up across reload.
       try {
-        await onRefresh()
-      } finally {
-        setRefreshing(false)
-        setPull(0)
+        sessionStorage.setItem(REFRESH_FLAG, '1')
+      } catch {
+        /* private mode — non-fatal */
       }
+      void onRefresh().catch(() => {})
+      window.setTimeout(() => window.location.reload(), 600)
     } else {
       setPull(0)
     }
   }
 
   const progress = Math.min(pull / TRIGGER_DISTANCE, 1)
-
-  const showMessage = !updateAvailable && (refreshing || progress > 0.4)
+  const showMessage = refreshing || progress > 0.4
 
   return (
     <div
@@ -106,20 +110,36 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
         aria-hidden={!refreshing}
       >
         <div style={{ opacity: refreshing ? 1 : progress }}>
-          <Spinner
-            size={20}
-            className={refreshing || updateAvailable ? 'text-flame' : 'text-muted'}
-          />
+          <Spinner size={20} className={refreshing ? 'text-flame' : 'text-muted'} />
         </div>
-        {updateAvailable && progress > 0.4 ? (
-          <span className="text-flame text-[11px]">Release to update</span>
-        ) : showMessage ? (
+        {showMessage ? (
           <span className="text-muted px-6 text-center text-[11px]" style={{ opacity: progress }}>
             {message}
           </span>
         ) : null}
       </motion.div>
       {children}
+
+      {refreshing ? (
+        <Portal>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className="bg-canvas fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5"
+            aria-live="polite"
+          >
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <Logo className="text-4xl" />
+            </motion.div>
+            <Spinner size={22} className="text-flame" />
+          </motion.div>
+        </Portal>
+      ) : null}
     </div>
   )
 }
