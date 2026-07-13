@@ -31,12 +31,14 @@ export function useOfflineSync(): UseOfflineSync {
   const flush = useCallback(async () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) return
     setSyncing(true)
+    let uploadedAny = false
     try {
       const items = await getQueuedRecordings()
       for (const item of items) {
         try {
           await uploadRecording(item)
           await removeQueuedRecording(item.id)
+          uploadedAny = true
         } catch {
           // Keep it queued and try again on the next online event.
         }
@@ -46,6 +48,8 @@ export function useOfflineSync(): UseOfflineSync {
     } finally {
       setSyncing(false)
       await refresh()
+      // Nudge the (already-mounted) library to reload if anything landed.
+      if (uploadedAny) window.dispatchEvent(new Event('dumpty:dumps-updated'))
     }
   }, [refresh])
 

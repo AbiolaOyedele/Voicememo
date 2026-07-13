@@ -83,6 +83,9 @@ export default function RecordPage() {
         await saveGuestDump(recording)
         reset()
         setSaveState('idle')
+        // The library panel is already mounted in the swipe carousel, so
+        // navigating to it won't remount/refetch — tell it to reload.
+        window.dispatchEvent(new Event('dumpty:dumps-updated'))
         goToTab('/library')
       } catch {
         setSaveState('error')
@@ -116,6 +119,9 @@ export default function RecordPage() {
       reset()
       setProcessing(false)
       setSaveState('idle')
+      // The library panel is already mounted in the swipe carousel, so
+      // navigating to it won't remount/refetch — tell it to reload.
+      window.dispatchEvent(new Event('dumpty:dumps-updated'))
       goToTab('/library')
     } catch {
       setProcessing(false)
