@@ -26,7 +26,9 @@ const REFRESH_MESSAGES = [
 ]
 
 interface PullToRefreshProps {
-  onRefresh: () => Promise<void>
+  /** Optional pre-reload hook (e.g. flush a pending write). The commit always
+   * hard-reloads regardless, so this is best-effort. */
+  onRefresh?: () => Promise<void>
   children: ReactNode
   /** Disables the gesture entirely — e.g. mid-recording, where a surprise
    * reload would destroy an in-progress take. */
@@ -50,9 +52,12 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
   const [refreshing, setRefreshing] = useState(false)
   const [message, setMessage] = useState('')
   const startY = useRef<number | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   function onTouchStart(e: ReactTouchEvent): void {
-    if (disabled || refreshing || window.scrollY > 0) {
+    // Engage only when this panel's own scroller is at the very top, so it
+    // never fights normal vertical scrolling within the panel.
+    if (disabled || refreshing || (rootRef.current?.scrollTop ?? 0) > 0) {
       startY.current = null
       return
     }
@@ -86,7 +91,7 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
       } catch {
         /* private mode — non-fatal */
       }
-      void onRefresh().catch(() => {})
+      void onRefresh?.().catch(() => {})
       window.setTimeout(() => window.location.reload(), 600)
     } else {
       setPull(0)
@@ -98,10 +103,11 @@ export function PullToRefresh({ onRefresh, children, disabled = false }: PullToR
 
   return (
     <div
+      ref={rootRef}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      className="flex flex-1 flex-col"
+      className="flex h-full flex-col overflow-x-hidden overflow-y-auto overscroll-contain"
     >
       <motion.div
         animate={{ height: refreshing ? TRIGGER_DISTANCE : pull }}

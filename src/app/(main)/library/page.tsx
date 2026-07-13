@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import { useTabNav } from '@/hooks/useTabCarousel'
 import { motion } from 'framer-motion'
 import type { Dump } from '@/types/dump'
 import { useDumps } from '@/hooks/useDumps'
@@ -132,6 +132,7 @@ function LibrarySkeleton() {
 }
 
 function EmptyState() {
+  const goToTab = useTabNav()
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -143,12 +144,13 @@ function EmptyState() {
       <p className="text-muted max-w-xs text-sm">
         Tap Record to capture your first idea. Your clean, segmented version shows up here.
       </p>
-      <Link
-        href="/record"
+      <button
+        type="button"
+        onClick={() => goToTab('/record')}
         className="rounded-btn bg-flame mt-2 inline-flex h-11 items-center px-5 text-white"
       >
         Record an idea
-      </Link>
+      </button>
     </motion.div>
   )
 }

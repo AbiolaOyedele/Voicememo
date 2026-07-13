@@ -45,6 +45,16 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Utility: hide the scrollbar on the horizontal swipe carousel while keeping
+   it scrollable (native paged scrolling drives the tab swipe). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Utility: honor iOS safe-area insets (used by the fixed bottom tab bar). */
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
