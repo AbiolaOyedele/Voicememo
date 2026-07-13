@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ActionPlan, Dump, DumpStatus, Segment } from '@/types/dump'
+import type { DumpStats } from '@/types/admin'
 import { AppError } from '@/lib/errors'
 
 /**
@@ -106,6 +107,32 @@ export async function updateDump(
     throw new AppError(404, 'That idea could not be found.', 'DB_UPDATE_DUMP_FAILED', error)
   }
   return data as Dump
+}
+
+/**
+ * Lifetime dump counts for the admin dashboard — deliberately includes
+ * soft-deleted rows (deleted_at is never filtered) so "recordings made"
+ * reflects everyone who ever recorded, not just what's still in a library.
+ * Service-role client only.
+ */
+export async function getDumpStats(admin: SupabaseClient): Promise<DumpStats> {
+  const [totalRes, transcribedRes, actionPlanRes] = await Promise.all([
+    admin.from(DUMPS_TABLE).select('id', { count: 'exact', head: true }),
+    admin.from(DUMPS_TABLE).select('id', { count: 'exact', head: true }).not('raw_transcript', 'is', null),
+    admin.from(DUMPS_TABLE).select('id', { count: 'exact', head: true }).not('action_plan', 'is', null),
+  ])
+
+  for (const res of [totalRes, transcribedRes, actionPlanRes]) {
+    if (res.error) {
+      throw new AppError(502, 'Could not count recordings.', 'DB_DUMP_STATS_FAILED', res.error)
+    }
+  }
+
+  return {
+    totalRecordings: totalRes.count ?? 0,
+    transcribedCount: transcribedRes.count ?? 0,
+    actionPlanCount: actionPlanRes.count ?? 0,
+  }
 }
 
 /** Soft-delete a dump the user owns. */

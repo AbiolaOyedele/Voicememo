@@ -39,6 +39,13 @@ export interface VisitStats {
   visitors30d: number
 }
 
+/** Lifetime recording/transcription/action-plan counts — includes soft-deleted dumps. */
+export interface DumpStats {
+  totalRecordings: number
+  transcribedCount: number
+  actionPlanCount: number
+}
+
 /** Everything the dashboard overview renders. */
 export interface AdminDashboardData {
   users: AdminUserStats

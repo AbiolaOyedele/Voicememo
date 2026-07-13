@@ -1,7 +1,7 @@
 'use client'
 
 import { useAdminResource } from '@/hooks/useAdminResource'
-import type { AdminUserStats, RecentSignup, VisitStats } from '@/types/admin'
+import type { AdminUserStats, DumpStats, RecentSignup, VisitStats } from '@/types/admin'
 import { StatTile, PanelLoading, PanelError, fmtDate } from './adminUi'
 import { BackToAppButton } from './BackToAppButton'
 
@@ -9,6 +9,7 @@ interface StatsData {
   users: AdminUserStats
   pushSubscriberCount: number
   visits: VisitStats
+  dumps: DumpStats
 }
 
 export function AdminDashboardPanel() {
@@ -17,7 +18,7 @@ export function AdminDashboardPanel() {
   if (loading) return <PanelLoading />
   if (error || !data) return <PanelError onRetry={reload} />
 
-  const { users, pushSubscriberCount, visits } = data
+  const { users, pushSubscriberCount, visits, dumps } = data
 
   return (
     <div className="flex flex-col gap-8">
@@ -33,6 +34,20 @@ export function AdminDashboardPanel() {
           <StatTile label="New today" value={visits.visitorsToday} />
           <StatTile label="Last 7 days" value={visits.visitors7d} />
           <StatTile label="Last 30 days" value={visits.visitors30d} />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-muted mb-3 text-xs font-medium tracking-wide uppercase">
+          Recordings
+        </h2>
+        <p className="text-muted mb-3 text-xs">
+          Lifetime totals — includes recordings the owner later deleted.
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          <StatTile label="Recorded" value={dumps.totalRecordings} />
+          <StatTile label="Transcribed" value={dumps.transcribedCount} />
+          <StatTile label="Action plans" value={dumps.actionPlanCount} />
         </div>
       </section>
 
