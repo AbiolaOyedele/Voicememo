@@ -28,13 +28,13 @@ const SWIPE_VELOCITY = 0.45 // px/ms — a flick this fast commits even under th
 const DIRECTION_LOCK_PX = 10 // px of movement before we decide horizontal-swipe vs vertical-scroll
 const EDGE_RESISTANCE = 0.3 // how much the drag slows past the first/last tab
 
-// Committed swipes slide the full width so the new page reads as continuously
-// sliding in from the edge (native feel) rather than a small fade-in. No
-// opacity change — a pure slide is what makes it feel like one surface moving.
+// Incoming page fades in with a short, cheap slide. A full-width slide of a
+// freshly-mounted route (the record page mounts a live waveform) janks on the
+// first frame, so we keep the transform tiny and let opacity carry the feel.
 const variants = {
-  enter: (direction: number) => ({ x: direction >= 0 ? '100%' : '-100%' }),
-  center: { x: '0%' },
-  exit: (direction: number) => ({ x: direction >= 0 ? '-100%' : '100%' }),
+  enter: (direction: number) => ({ opacity: 0, x: direction >= 0 ? 20 : -20 }),
+  center: { opacity: 1, x: 0 },
+  exit: (direction: number) => ({ opacity: 0, x: direction >= 0 ? -20 : 20 }),
 }
 
 /**
@@ -206,7 +206,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Splash />
       <div
         ref={containerRef}
-        className="flex min-h-[100dvh] flex-1 flex-col overflow-x-hidden pb-24"
+        className="flex min-h-[100dvh] flex-1 flex-col touch-pan-y overflow-x-hidden pb-24"
       >
         <RefreshControlContext.Provider value={refreshControl}>
           <PullToRefresh onRefresh={onRefresh} disabled={refreshDisabled}>
@@ -222,7 +222,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   initial={reduced ? false : 'enter'}
                   animate="center"
                   exit={reduced ? { opacity: 0 } : 'exit'}
-                  transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                   className="col-start-1 row-start-1 flex min-w-0 flex-col"
                 >
                   {children}
