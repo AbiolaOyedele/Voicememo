@@ -11,8 +11,8 @@ import { GuestLibrary } from '@/components/features/library/GuestLibrary'
 import { SearchBar } from '@/components/features/library/SearchBar'
 import { Chip } from '@/components/ui/Chip'
 import { Button } from '@/components/ui/Button'
-import { PullToRefresh } from '@/components/ui/PullToRefresh'
 import { Reveal } from '@/components/ui/Reveal'
+import { useRegisterRefresh } from '@/hooks/useRefreshControl'
 
 /** Routes guests to the local library and signed-in users to the synced one. */
 export default function LibraryPage() {
@@ -34,6 +34,7 @@ function SignedInLibrary() {
   const { dumps, loading, error, refetch, setDumps } = useDumps()
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  useRegisterRefresh(refetch)
 
   const allTags = useMemo(() => {
     const set = new Set<string>()
@@ -69,52 +70,50 @@ function SignedInLibrary() {
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-6">
-      <PullToRefresh onRefresh={refetch}>
-        <div className="flex flex-col gap-4">
-          <Reveal>
-            <h1 className="px-1 text-2xl tracking-tight">Library</h1>
-          </Reveal>
+      <div className="flex flex-col gap-4">
+        <Reveal>
+          <h1 className="px-1 text-2xl tracking-tight">Library</h1>
+        </Reveal>
 
-          <Reveal delay={0.04}>
-            <SearchBar value={query} onChange={setQuery} />
-          </Reveal>
+        <Reveal delay={0.04}>
+          <SearchBar value={query} onChange={setQuery} />
+        </Reveal>
 
-          {allTags.length > 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-wrap gap-1.5"
-            >
-              <Chip active={activeTag === null} onClick={() => setActiveTag(null)}>
-                All
+        {allTags.length > 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-wrap gap-1.5"
+          >
+            <Chip active={activeTag === null} onClick={() => setActiveTag(null)}>
+              All
+            </Chip>
+            {allTags.map((tag) => (
+              <Chip key={tag} active={activeTag === tag} onClick={() => setActiveTag(tag)}>
+                {tag}
               </Chip>
-              {allTags.map((tag) => (
-                <Chip key={tag} active={activeTag === tag} onClick={() => setActiveTag(tag)}>
-                  {tag}
-                </Chip>
-              ))}
-            </motion.div>
-          ) : null}
+            ))}
+          </motion.div>
+        ) : null}
 
-          {loading ? (
-            <LibrarySkeleton />
-          ) : error ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <p className="text-muted text-sm">{error}</p>
-              <Button variant="secondary" size="md" onClick={() => void refetch()}>
-                Try again
-              </Button>
-            </div>
-          ) : dumps.length === 0 ? (
-            <EmptyState />
-          ) : filtered.length === 0 ? (
-            <p className="text-muted py-16 text-center text-sm">No ideas match your search.</p>
-          ) : (
-            <DumpList dumps={filtered} onTogglePin={togglePin} />
-          )}
-        </div>
-      </PullToRefresh>
+        {loading ? (
+          <LibrarySkeleton />
+        ) : error ? (
+          <div className="flex flex-col items-center gap-3 py-16 text-center">
+            <p className="text-muted text-sm">{error}</p>
+            <Button variant="secondary" size="md" onClick={() => void refetch()}>
+              Try again
+            </Button>
+          </div>
+        ) : dumps.length === 0 ? (
+          <EmptyState />
+        ) : filtered.length === 0 ? (
+          <p className="text-muted py-16 text-center text-sm">No ideas match your search.</p>
+        ) : (
+          <DumpList dumps={filtered} onTogglePin={togglePin} />
+        )}
+      </div>
     </main>
   )
 }

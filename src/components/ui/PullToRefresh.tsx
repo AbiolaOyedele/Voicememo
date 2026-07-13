@@ -9,9 +9,20 @@ const TRIGGER_DISTANCE = 64 // px of pull that commits a refresh
 const MAX_PULL = 96 // px visual cap
 const RESISTANCE = 0.45 // how much the pull slows past the trigger distance
 
+/** A random one shows up each time you refresh — small, on-brand fun. */
+const REFRESH_MESSAGES = [
+  'Putting Humpty together again…',
+  "All the king's horses are on it…",
+  "Careful — don't fall off the wall…",
+  'Patching up the pieces…',
+]
+
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>
   children: ReactNode
+  /** Disables the gesture entirely — e.g. mid-recording, where a surprise
+   * reload (from a pending update) would destroy an in-progress take. */
+  disabled?: boolean
 }
 
 /**
@@ -25,15 +36,16 @@ interface PullToRefreshProps {
  * (useUpdatePrompt), pulling down reloads the page instead of calling
  * `onRefresh` — no separate "new version available" banner needed.
  */
-export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
+export function PullToRefresh({ onRefresh, children, disabled = false }: PullToRefreshProps) {
   const reduced = useReducedMotion()
   const updateAvailable = useUpdatePrompt()
   const [pull, setPull] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
+  const [message, setMessage] = useState('')
   const startY = useRef<number | null>(null)
 
   function onTouchStart(e: ReactTouchEvent): void {
-    if (refreshing || window.scrollY > 0) {
+    if (disabled || refreshing || window.scrollY > 0) {
       startY.current = null
       return
     }
@@ -47,7 +59,8 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
       setPull(0)
       return
     }
-    const eased = dy < TRIGGER_DISTANCE ? dy : TRIGGER_DISTANCE + (dy - TRIGGER_DISTANCE) * RESISTANCE
+    const eased =
+      dy < TRIGGER_DISTANCE ? dy : TRIGGER_DISTANCE + (dy - TRIGGER_DISTANCE) * RESISTANCE
     setPull(Math.min(eased, MAX_PULL))
   }
 
@@ -61,6 +74,7 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
         window.location.reload()
         return // page is reloading — nothing left to reset
       }
+      setMessage(REFRESH_MESSAGES[Math.floor(Math.random() * REFRESH_MESSAGES.length)] as string)
       try {
         await onRefresh()
       } finally {
@@ -83,9 +97,14 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
         aria-hidden={!refreshing}
       >
         <div style={{ opacity: refreshing ? 1 : progress }}>
-          <Spinner size={20} className={refreshing || updateAvailable ? 'text-flame' : 'text-muted'} />
+          <Spinner
+            size={20}
+            className={refreshing || updateAvailable ? 'text-flame' : 'text-muted'}
+          />
         </div>
-        {updateAvailable && progress > 0.4 ? (
+        {refreshing ? (
+          <span className="text-muted text-[11px]">{message}</span>
+        ) : updateAvailable && progress > 0.4 ? (
           <span className="text-flame text-[11px]">Release to update</span>
         ) : null}
       </motion.div>

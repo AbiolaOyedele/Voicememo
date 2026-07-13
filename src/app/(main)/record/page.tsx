@@ -9,6 +9,7 @@ import { Timer } from '@/components/features/record/Timer'
 import { QueuedIndicator } from '@/components/features/record/QueuedIndicator'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
+import { useRefreshDisabled } from '@/hooks/useRefreshControl'
 import {
   ProgressiveFluxLoader,
   type ProgressiveFluxPhase,
@@ -131,6 +132,10 @@ export default function RecordPage() {
   const isRecording = state === 'recording'
   const isBusy = state === 'requesting'
   const showStopped = state === 'stopped' && recording
+
+  // A surprise reload mid-take (e.g. from a pending update) would destroy the
+  // recording, so suppress pull-to-refresh while there's anything to lose.
+  useRefreshDisabled(isRecording || Boolean(showStopped) || processing)
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-10">

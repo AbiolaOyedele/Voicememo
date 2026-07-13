@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { getOptionalUser } from '@/middleware/auth'
 import { SignOutButton } from '@/components/features/account/SignOutButton'
+import { DeleteAccountButton } from '@/components/features/account/DeleteAccountButton'
+import { FeedbackButton } from '@/components/features/account/FeedbackButton'
 import { ChangelogSection } from '@/components/features/account/ChangelogSection'
 import { Reveal } from '@/components/ui/Reveal'
 
@@ -61,9 +63,9 @@ export default async function AccountPage() {
         <section className="flex flex-col gap-2">
           <h2 className="text-muted px-1 text-xs tracking-wide uppercase">Settings</h2>
           <ul className="rounded-card divide-ink/10 border-ink/10 divide-y border">
-            <SettingRow label="Notifications" hint="Coming soon" />
             <SettingRow label="Export your data" hint="Coming soon" />
-            <SettingRow label="Delete account" hint="Coming soon" destructive />
+            <FeedbackButton />
+            <DeleteAccountButton />
           </ul>
         </section>
       </Reveal>
@@ -79,18 +81,10 @@ export default async function AccountPage() {
   )
 }
 
-function SettingRow({
-  label,
-  hint,
-  destructive = false,
-}: {
-  label: string
-  hint: string
-  destructive?: boolean
-}) {
+function SettingRow({ label, hint }: { label: string; hint: string }) {
   return (
     <li className="flex items-center justify-between px-4 py-3.5">
-      <span className={`text-[15px] ${destructive ? 'text-ink' : 'text-ink'}`}>{label}</span>
+      <span className="text-[15px]">{label}</span>
       <span className="text-muted text-xs">{hint}</span>
     </li>
   )

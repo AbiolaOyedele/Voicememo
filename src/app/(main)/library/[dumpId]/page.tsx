@@ -8,6 +8,8 @@ import type { ActionPlan, Dump } from '@/types/dump'
 import { Chip } from '@/components/ui/Chip'
 import { Spinner } from '@/components/ui/Spinner'
 import { Button } from '@/components/ui/Button'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useRegisterRefresh } from '@/hooks/useRefreshControl'
 import { ExportActions } from '@/components/features/library/ExportActions'
 import { ChevronDownIcon, ChevronLeftIcon, StarIcon, TrashIcon } from '@/components/ui/icons'
 import { formatDuration } from '@/utils/audio'
@@ -24,6 +26,8 @@ export default function DumpDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [view, setView] = useState<View>('clean')
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -47,6 +51,8 @@ export default function DumpDetailPage() {
     void load()
   }, [load])
 
+  useRegisterRefresh(load)
+
   async function togglePin(): Promise<void> {
     if (!dump) return
     const next = !dump.is_pinned
@@ -60,9 +66,18 @@ export default function DumpDetailPage() {
 
   async function remove(): Promise<void> {
     if (!dump) return
-    if (!window.confirm('Delete this idea? This cannot be undone.')) return
-    const res = await fetch(`/api/v1/dumps/${dump.id}`, { method: 'DELETE' })
-    if (res.ok) router.push('/library')
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/v1/dumps/${dump.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        router.push('/library')
+        return
+      }
+      setError('We could not delete that idea. Try again.')
+    } finally {
+      setDeleting(false)
+      setConfirmingDelete(false)
+    }
   }
 
   return (
@@ -88,7 +103,7 @@ export default function DumpDetailPage() {
             </button>
             <button
               type="button"
-              onClick={remove}
+              onClick={() => setConfirmingDelete(true)}
               aria-label="Delete idea"
               className="text-muted p-2"
             >
@@ -160,6 +175,16 @@ export default function DumpDetailPage() {
           {dump.status === 'ready' ? <ExportActions dump={dump} /> : null}
         </article>
       )}
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="Delete this idea?"
+        description="This can't be undone — the recording and its transcript will be gone for good."
+        confirmLabel="Delete"
+        loading={deleting}
+        onConfirm={() => void remove()}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </main>
   )
 }
@@ -198,13 +223,7 @@ function DetailToggle({
  * the extra Claude call. Hidden behind a collapsed toggle until the user
  * chooses to view it, even after it's been generated.
  */
-function ActionPlanSection({
-  dump,
-  onUpdate,
-}: {
-  dump: Dump
-  onUpdate: (dump: Dump) => void
-}) {
+function ActionPlanSection({ dump, onUpdate }: { dump: Dump; onUpdate: (dump: Dump) => void }) {
   const [expanded, setExpanded] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -253,8 +272,8 @@ function ActionPlanSection({
   if (!dump.action_plan) {
     return (
       <div data-no-print className="border-ink/10 flex flex-col gap-2 border-t pt-4">
-        <Button variant="secondary" size="md" onClick={generate} loading={generating}>
-          Create action plan
+        <Button variant="secondary" size="md" onClick={generate} disabled={generating}>
+          {generating ? 'Generating…' : 'Create action plan'}
         </Button>
         {error ? (
           <p role="alert" className="text-muted text-sm">
