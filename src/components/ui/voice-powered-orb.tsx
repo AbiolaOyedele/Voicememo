@@ -14,7 +14,17 @@ interface VoicePoweredOrbProps {
   onVoiceDetected?: (detected: boolean) => void
   /** Optional shared stream (e.g. from the recorder) so the orb doesn't open a second mic. */
   mediaStream?: MediaStream | null
+  /** Deep core tone as normalised [r, g, b] (0–1). Defaults to the app's warm burnt orange. */
+  coreColor?: [number, number, number]
+  /**
+   * Simulate the energetic "recording" look (faster rotation + wavy distortion)
+   * without opening a microphone. Ignored while a real analyser is active.
+   */
+  demo?: boolean
 }
+
+/** Default deep core tone (#9D2500) — matches the app record screen. */
+const DEFAULT_CORE: [number, number, number] = [0.615686, 0.145098, 0.0]
 
 const VERT = /* glsl */ `
   precision highp float;
@@ -90,9 +100,10 @@ const FRAG = /* glsl */ `
 
   // Brand flame (#FF4F03) and warm shades. A glow shader needs saturated colour to
   // read on white — mid-grey was near-invisible; the orange rim shows clearly.
+  // baseColor3 (the deep core tone) is a uniform so callers can warm it up.
   const vec3 baseColor1 = vec3(1.000000, 0.309804, 0.011765);
   const vec3 baseColor2 = vec3(1.000000, 0.627451, 0.301961);
-  const vec3 baseColor3 = vec3(0.615686, 0.145098, 0.000000);
+  uniform vec3 baseColor3;
   const float innerRadius = 0.6;
   const float noiseScale = 0.65;
 
@@ -166,6 +177,8 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
   maxHoverIntensity = 0.8,
   onVoiceDetected,
   mediaStream = null,
+  coreColor = DEFAULT_CORE,
+  demo = false,
 }) => {
   const ctnDom = useRef<HTMLDivElement>(null)
 
@@ -185,6 +198,8 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     maxHoverIntensity,
     onVoiceDetected: onVoiceDetected ?? (() => {}),
     mediaStream,
+    coreColor,
+    demo,
   })
   propsRef.current = {
     hue,
@@ -194,6 +209,8 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     maxHoverIntensity,
     onVoiceDetected: onVoiceDetected ?? (() => {}),
     mediaStream,
+    coreColor,
+    demo,
   }
 
   // --- Audio setup: rebuild the analyser when voice control or the stream changes. ---
@@ -267,16 +284,21 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     if (!container) return
 
     let rafId = 0
+    // The fragment shader outputs PREMULTIPLIED colour (`col.rgb * col.a`), so the
+    // canvas and blend func must both be premultiplied too. Mixing a premultiplied
+    // output with `premultipliedAlpha:false` makes the compositor multiply by alpha
+    // a second time, darkening the glow's soft edge into a grey halo — most visible
+    // at low DPR (desktop). Keeping the whole pipeline premultiplied removes it.
     const renderer = new Renderer({
       alpha: true,
-      premultipliedAlpha: false,
+      premultipliedAlpha: true,
       antialias: true,
       dpr: window.devicePixelRatio || 1,
     })
     const gl = renderer.gl
     gl.clearColor(0, 0, 0, 0)
     gl.enable(gl.BLEND)
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
     while (container.firstChild) container.removeChild(container.firstChild)
     container.appendChild(gl.canvas)
@@ -294,6 +316,7 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
         hover: { value: 0 },
         rot: { value: 0 },
         hoverIntensity: { value: 0 },
+        baseColor3: { value: new Vec3(coreColor[0], coreColor[1], coreColor[2]) },
       },
     })
     const mesh = new Mesh(gl, { geometry, program })
@@ -339,12 +362,29 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
       lastTime = t
       program.uniforms.iTime.value = t * 0.001
       program.uniforms.hue.value = p.hue
+      const core = program.uniforms.baseColor3.value as Vec3
+      core.set(p.coreColor[0], p.coreColor[1], p.coreColor[2])
 
       if (p.enableVoiceControl && analyserRef.current) {
         const level = readLevel()
         p.onVoiceDetected(level > 0.1)
         const speed = baseRotationSpeed + level * p.maxRotationSpeed * 2.0
         if (level > 0.05) currentRot += dt * speed
+        program.uniforms.hover.value = Math.min(level * 2.0, 1.0)
+        program.uniforms.hoverIntensity.value = Math.min(
+          level * p.maxHoverIntensity * 0.8,
+          p.maxHoverIntensity,
+        )
+      } else if (p.demo) {
+        // Mic-free "recording" look: an organic synthetic loudness from layered
+        // sines so the orb swirls and distorts as if reacting to a live voice.
+        const tt = t * 0.001
+        const level = Math.max(
+          0.18,
+          Math.min(0.85, 0.45 + 0.25 * Math.sin(tt * 2.3) + 0.14 * Math.sin(tt * 5.7 + 1.3)),
+        )
+        const speed = baseRotationSpeed + level * p.maxRotationSpeed * 2.0
+        currentRot += dt * speed
         program.uniforms.hover.value = Math.min(level * 2.0, 1.0)
         program.uniforms.hoverIntensity.value = Math.min(
           level * p.maxHoverIntensity * 0.8,

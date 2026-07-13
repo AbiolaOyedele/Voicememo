@@ -10,7 +10,10 @@ import { formatDuration } from '@/utils/audio'
 export function Timer({ elapsedSeconds }: { elapsedSeconds: number }) {
   return (
     <div className="flex flex-col items-center gap-1" aria-live="polite">
-      <span className="font-mono text-4xl tabular-nums">
+      <span
+        className="text-5xl tabular-nums tracking-tight"
+        style={{ fontFamily: 'var(--font-noirpro)' }}
+      >
         {formatDuration(elapsedSeconds)}
       </span>
       <span className="text-muted text-xs">of {formatDuration(MAX_DURATION_SECONDS)} max</span>
