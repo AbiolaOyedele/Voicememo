@@ -74,6 +74,7 @@ export async function sendFeedbackNotification(input: FeedbackNotification): Pro
   const { data, error } = await resend.emails.send({
     from: env.FEEDBACK_FROM_EMAIL,
     to,
+    ...(env.NOTIFY_CC_EMAIL ? { cc: env.NOTIFY_CC_EMAIL } : {}),
     subject: `[Dumpty] ${label} feedback`,
     html,
     text,
@@ -144,6 +145,7 @@ export async function sendSignupNotification(input: SignupNotification): Promise
   const { data, error } = await resend.emails.send({
     from: env.FEEDBACK_FROM_EMAIL,
     to,
+    ...(env.NOTIFY_CC_EMAIL ? { cc: env.NOTIFY_CC_EMAIL } : {}),
     subject: `[Dumpty] 🎉 New signup: ${who}`,
     html,
     text,

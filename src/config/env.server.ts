@@ -33,11 +33,14 @@ const serverSchema = z.object({
   // doesn't hard-fail boot; the feedback service reports a clear error when the
   // key is missing at send time.
   RESEND_API_KEY: z.string().min(1).optional(),
-  // Sender identity, e.g. `Dumpty <feedback@theruff.agency>`. Must be a
-  // verified Resend domain. Falls back to Resend's shared onboarding sender.
+  // Sender identity, e.g. `Dumpty <hello@theruff.agency>`. Must be a verified
+  // Resend domain. Falls back to Resend's shared onboarding sender.
   FEEDBACK_FROM_EMAIL: z.string().min(1).default('Dumpty <onboarding@resend.dev>'),
   // Destination inbox for feedback submissions.
   FEEDBACK_TO_EMAIL: z.string().email().optional(),
+  // Optional CC on all operator notifications (feedback + signup), so a
+  // personal inbox gets a copy alongside the primary hello@ address.
+  NOTIFY_CC_EMAIL: z.string().email().optional(),
   // Shared secret guarding the new-user webhook. Supabase sends it as a custom
   // header; the route rejects any request whose header doesn't match. Optional
   // so boot doesn't hard-fail before it's set, but the route refuses to run
