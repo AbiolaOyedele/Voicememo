@@ -90,3 +90,69 @@ export async function sendFeedbackNotification(input: FeedbackNotification): Pro
 
   logger.info({ id: data?.id }, 'Feedback email sent')
 }
+
+export interface SignupNotification {
+  /** New user's id from `auth.users`. */
+  userId: string
+  /** New user's email, or null if signed up without one. */
+  email: string | null
+  /** Sign-up method, e.g. 'google' or 'email', when known. */
+  provider: string | null
+  /** ISO timestamp the account was created, when known. */
+  createdAt: string | null
+}
+
+/**
+ * Emails the operator when a new user signs up. Best-effort: throws
+ * {@link AppError} on misconfiguration or send failure so the webhook caller
+ * (Supabase) sees a non-2xx and retries, rather than silently losing the alert.
+ */
+export async function sendSignupNotification(input: SignupNotification): Promise<void> {
+  const resend = getResendClient()
+  const to = env.SIGNUP_NOTIFY_TO_EMAIL ?? env.FEEDBACK_TO_EMAIL
+
+  if (!resend || !to) {
+    logger.error(
+      { errorCode: 'SIGNUP_EMAIL_NOT_CONFIGURED', hasKey: Boolean(resend), hasTo: Boolean(to) },
+      'Signup notification email is not configured',
+    )
+    throw new AppError(
+      503,
+      'Signup notifications are not configured.',
+      'SIGNUP_EMAIL_NOT_CONFIGURED',
+    )
+  }
+
+  const meta: string[] = [
+    `User: ${input.userId}`,
+    input.provider ? `Via: ${input.provider}` : null,
+    input.createdAt ? `At: ${input.createdAt}` : null,
+  ].filter((line): line is string => line !== null)
+
+  const who = input.email ?? '(no email on file)'
+
+  const html = `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111;line-height:1.6">
+      <p style="margin:0 0 12px"><strong>🎉 New signup</strong></p>
+      <div style="font-size:15px;margin:0 0 16px">${escapeHtml(who)}</div>
+      <p style="font-size:13px;color:#6b7280;margin:0">${meta.map(escapeHtml).join(' · ')}</p>
+    </div>
+  `.trim()
+
+  const text = `New signup\n\n${who}\n\n${meta.join('\n')}`
+
+  const { data, error } = await resend.emails.send({
+    from: env.FEEDBACK_FROM_EMAIL,
+    to,
+    subject: `[Dumpty] 🎉 New signup: ${who}`,
+    html,
+    text,
+  })
+
+  if (error) {
+    logger.error({ errorCode: 'SIGNUP_EMAIL_SEND_FAILED', err: error.message }, 'Signup email send failed')
+    throw new AppError(502, 'Could not send the signup notification.', 'SIGNUP_EMAIL_SEND_FAILED')
+  }
+
+  logger.info({ id: data?.id }, 'Signup notification email sent')
+}

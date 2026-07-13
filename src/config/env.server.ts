@@ -38,6 +38,13 @@ const serverSchema = z.object({
   FEEDBACK_FROM_EMAIL: z.string().min(1).default('Dumpty <onboarding@resend.dev>'),
   // Destination inbox for feedback submissions.
   FEEDBACK_TO_EMAIL: z.string().email().optional(),
+  // Shared secret guarding the new-user webhook. Supabase sends it as a custom
+  // header; the route rejects any request whose header doesn't match. Optional
+  // so boot doesn't hard-fail before it's set, but the route refuses to run
+  // (503) until it is, so an unconfigured endpoint can't be called anonymously.
+  SIGNUP_WEBHOOK_SECRET: z.string().min(1).optional(),
+  // Destination inbox for new-signup alerts. Falls back to FEEDBACK_TO_EMAIL.
+  SIGNUP_NOTIFY_TO_EMAIL: z.string().email().optional(),
 
   // App
   NEXT_PUBLIC_SITE_URL: z.string().url(),
