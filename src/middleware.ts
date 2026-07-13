@@ -42,13 +42,19 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
   const isApi = pathname.startsWith('/api')
   const isAuthPath = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  // The bare domain serves the public marketing landing page.
+  const isLanding = pathname === '/'
   // Guests get local-only access to the main app via a cookie (no server session).
   const isGuest = request.cookies.get('dumpty_guest')?.value === '1'
 
-  if (!user && !isGuest && !isApi && !isAuthPath) {
+  if (!user && !isGuest && !isApi && !isAuthPath && !isLanding) {
     return redirectPreservingCookies(request, response, '/login')
   }
   if (user && isAuthPath) {
+    return redirectPreservingCookies(request, response, '/record')
+  }
+  // Signed-in and guest users skip the marketing page and land in the app.
+  if ((user || isGuest) && isLanding) {
     return redirectPreservingCookies(request, response, '/record')
   }
 
