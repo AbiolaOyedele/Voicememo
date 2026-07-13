@@ -41,6 +41,16 @@ export interface ActionPlan {
 /** Maximum recording length in seconds (15 minutes), enforced client- and server-side. */
 export const MAX_DURATION_SECONDS = 900
 
+/**
+ * Maximum audio upload size in bytes (50MB) — generous headroom above any
+ * supported codec's realistic bitrate for a 15-minute recording, including a
+ * higher-bitrate stereo capture (e.g. 320kbps stereo Opus tops out around
+ * 35MB), while still bounding a single recording to roughly 1000x smaller
+ * than a real abuse payload. Enforced against both the declared upload size
+ * and the object actually stored in R2 before it's billed against Deepgram.
+ */
+export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
 /** A voice dump as stored in the `dumps` table. */
 export interface Dump {
   id: string

@@ -35,6 +35,7 @@ export async function uploadRecording(
   const { uploadUrl, dumpId } = await postJson<CreateUploadResponse>('/api/v1/upload', {
     duration_seconds: recording.durationSeconds,
     content_type: recording.mimeType,
+    size_bytes: recording.blob.size,
   })
   onProgress?.(10)
 

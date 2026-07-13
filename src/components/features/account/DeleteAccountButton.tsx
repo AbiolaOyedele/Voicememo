@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
+import { clearDumpsCache } from '@/lib/dumps-cache'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 /** Settings row that opens a confirmation dialog, then permanently deletes the account and all its data. */
@@ -18,6 +19,8 @@ export function DeleteAccountButton() {
     try {
       const res = await fetch('/api/v1/account', { method: 'DELETE' })
       if (!res.ok) throw new Error('failed')
+      // Never leave this account's cached ideas for the next person on this device.
+      clearDumpsCache()
       const supabase = createBrowserSupabaseClient()
       await supabase.auth.signOut()
       router.push('/login')

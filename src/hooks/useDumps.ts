@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { Dump } from '@/types/dump'
-import { readDumpsCache, writeDumpsCache } from '@/lib/dumps-cache'
+import { clearDumpsCache, readDumpsCache, writeDumpsCache } from '@/lib/dumps-cache'
 
 interface UseDumps {
   dumps: Dump[]
@@ -32,7 +32,9 @@ export function useDumps(): UseDumps {
     try {
       const res = await fetch('/api/v1/dumps', { cache: 'no-store' })
       // Not signed in: nothing to show yet — treat as an empty library, not an error.
+      // Also purge any cached ideas from a previous account/session on this device.
       if (res.status === 401) {
+        clearDumpsCache()
         setDumps([])
         return
       }

@@ -40,6 +40,19 @@ export default function DumpDetailPage() {
     setError(null)
     try {
       const res = await fetch(`/api/v1/dumps/${dumpId}`, { cache: 'no-store' })
+      // A definitive "not for this session" response — evict any stale cached
+      // copy rather than leaving it on screen. This matters when a different
+      // account has since signed in on this device: a cache entry that belongs
+      // to a previous session must never keep rendering after the server says
+      // it doesn't belong to the current one.
+      if (res.status === 401 || res.status === 404) {
+        removeCachedDump(dumpId)
+        setDump(null)
+        setError(
+          res.status === 401 ? 'You need to be signed in to view that idea.' : 'Idea not found.',
+        )
+        return
+      }
       const json = (await res.json().catch(() => null)) as {
         data?: Dump
         error?: { message?: string }

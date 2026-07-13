@@ -1,5 +1,6 @@
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   PutBucketLifecycleConfigurationCommand,
   PutObjectCommand,
 } from '@aws-sdk/client-s3'
@@ -9,7 +10,7 @@ import { z } from 'zod'
 import { r2, R2_BUCKET } from '@/lib/r2'
 import { extensionForMimeType } from '@/utils/audio'
 import { AppError } from '@/lib/errors'
-import { MAX_DURATION_SECONDS } from '@/types/dump'
+import { MAX_DURATION_SECONDS, MAX_UPLOAD_BYTES } from '@/types/dump'
 import { insertDump, updateDump } from '@/repositories/dumps.repository'
 import type { CreateUploadResponse } from '@/types/api'
 
@@ -26,12 +27,27 @@ export function buildAudioKey(userId: string, dumpId: string, mimeType: string):
   return `audio/${userId}/${dumpId}.${extensionForMimeType(mimeType)}`
 }
 
-/** Presigned PUT URL the client uses to upload audio directly to R2. */
-export async function createPresignedUploadUrl(key: string, contentType: string): Promise<string> {
+/**
+ * Presigned PUT URL the client uses to upload audio directly to R2. Binding
+ * `ContentLength` to the exact declared size means R2 rejects a PUT whose body
+ * doesn't match — the client already has the full recording blob (and thus its
+ * exact byte length) by the time it requests this URL, so there's no reason a
+ * legitimate upload would ever need to send a different size.
+ */
+export async function createPresignedUploadUrl(
+  key: string,
+  contentType: string,
+  sizeBytes: number,
+): Promise<string> {
   try {
     return await getSignedUrl(
       r2,
-      new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, ContentType: contentType }),
+      new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: key,
+        ContentType: contentType,
+        ContentLength: sizeBytes,
+      }),
       { expiresIn: UPLOAD_URL_TTL_SECONDS },
     )
   } catch (error) {
@@ -73,6 +89,21 @@ export async function createPresignedDownloadUrl(key: string): Promise<string> {
   }
 }
 
+/**
+ * Actual stored size of an uploaded audio object, in bytes. A defense-in-depth
+ * check independent of the presigned PUT's `ContentLength` binding — run
+ * before handing an object to the paid transcription API, in case R2 doesn't
+ * enforce that binding as strictly as S3 does.
+ */
+export async function getAudioObjectSize(key: string): Promise<number> {
+  try {
+    const head = await r2.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }))
+    return head.ContentLength ?? 0
+  } catch (error) {
+    throw new AppError(502, 'We could not read the audio.', 'STORAGE_HEAD_FAILED', error)
+  }
+}
+
 const uploadSchema = z.object({
   // 15-minute hard cap enforced server-side before anything reaches R2/Deepgram.
   duration_seconds: z.number().int().min(1).max(MAX_DURATION_SECONDS),
@@ -80,6 +111,10 @@ const uploadSchema = z.object({
     .string()
     .regex(/^audio\//, 'Only audio uploads are allowed.')
     .max(100),
+  // Exact byte length of the recording blob the client already has in hand —
+  // bound into the presigned PUT URL so R2 rejects an upload of a different
+  // size (see createPresignedUploadUrl).
+  size_bytes: z.number().int().min(1).max(MAX_UPLOAD_BYTES),
 })
 
 /**
@@ -102,7 +137,7 @@ export async function prepareUpload(
     )
   }
 
-  const { duration_seconds, content_type } = parsed.data
+  const { duration_seconds, content_type, size_bytes } = parsed.data
   const dump = await insertDump(supabase, {
     userId,
     durationSeconds: duration_seconds,
@@ -111,7 +146,7 @@ export async function prepareUpload(
 
   const key = buildAudioKey(userId, dump.id, content_type)
   await updateDump(supabase, userId, dump.id, { r2_audio_key: key })
-  const uploadUrl = await createPresignedUploadUrl(key, content_type)
+  const uploadUrl = await createPresignedUploadUrl(key, content_type, size_bytes)
 
   return { uploadUrl, key, dumpId: dump.id }
 }

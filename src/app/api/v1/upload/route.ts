@@ -6,9 +6,10 @@ import { jsonOk, toErrorResponse } from '@/lib/http'
 
 // POST /api/v1/upload
 // Auth: required
-// Body: { duration_seconds: number, content_type: string }
+// Body: { duration_seconds: number, content_type: string, size_bytes: number }
 // Returns: { uploadUrl, key, dumpId }
-// Rejects recordings longer than 15 minutes before they reach R2/Deepgram.
+// Rejects recordings longer than 15 minutes, or the object itself too large,
+// before they reach R2/Deepgram.
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const { supabase, user } = await requireUser()
