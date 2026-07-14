@@ -35,7 +35,7 @@ const serverSchema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   // Sender identity, e.g. `Dumpty <hello@theruff.agency>`. Must be a verified
   // Resend domain. Falls back to Resend's shared onboarding sender.
-  FEEDBACK_FROM_EMAIL: z.string().min(1).default('Dumpty <onboarding@resend.dev>'),
+  FEEDBACK_FROM_EMAIL: z.string().min(1).default('Dumpty <Dumpty@theruff.agency>'),
   // Destination inbox for feedback submissions.
   FEEDBACK_TO_EMAIL: z.string().email().optional(),
   // Optional CC on all operator notifications (feedback + signup), so a
