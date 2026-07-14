@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MAX_DURATION_SECONDS } from '@/types/dump'
 import { pickAudioMimeType } from '@/utils/audio'
-import { acquireMic } from '@/lib/mic'
+import { acquireMic, getMicPermissionState } from '@/lib/mic'
 
 export type RecorderState = 'idle' | 'requesting' | 'recording' | 'stopped' | 'error'
 
@@ -75,6 +75,16 @@ export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): 
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       setState('error')
       setError('Recording is not supported on this device or browser.')
+      return
+    }
+
+    // If the browser already told us the mic is blocked, don't call
+    // getUserMedia again (it would just reject) — send the user to settings.
+    if ((await getMicPermissionState()) === 'denied') {
+      setState('error')
+      setError(
+        'Microphone access is blocked. Enable it for this site in your browser settings, then try again.',
+      )
       return
     }
 

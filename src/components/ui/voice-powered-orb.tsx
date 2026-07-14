@@ -3,6 +3,7 @@
 import { useEffect, useRef, type FC } from 'react'
 import { Renderer, Program, Mesh, Triangle, Vec3 } from 'ogl'
 import { cn } from '@/lib/utils'
+import { getMicPermissionState } from '@/lib/mic'
 
 interface VoicePoweredOrbProps {
   className?: string
@@ -258,6 +259,14 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
         attach(mediaStream)
         return
       }
+      // Never open our own microphone just because the orb mounted — that would
+      // trigger a permission prompt outside a user gesture (the cause of repeat
+      // prompts on later visits). Only self-acquire when the browser already
+      // reports the mic as granted, which never shows a prompt. If we can't
+      // confirm that (denied, prompt, or unsupported), the orb just animates
+      // without voice reactivity. On the record screen a shared `mediaStream`
+      // is passed in anyway, so this fallback is purely decorative.
+      if ((await getMicPermissionState()) !== 'granted' || cancelled) return
       try {
         const own = await navigator.mediaDevices.getUserMedia({ audio: true })
         if (cancelled) {

@@ -16,6 +16,25 @@ function hasLiveAudio(stream: MediaStream | null): stream is MediaStream {
   return !!stream && stream.getAudioTracks().some((t) => t.readyState === 'live')
 }
 
+/**
+ * Current microphone permission as the browser sees it, WITHOUT prompting.
+ * Returns `'unsupported'` where `navigator.permissions.query` isn't available
+ * or doesn't recognise the `microphone` name (older iOS Safari), so callers can
+ * decide conservatively rather than blindly calling `getUserMedia`.
+ */
+export async function getMicPermissionState(): Promise<PermissionState | 'unsupported'> {
+  if (typeof navigator === 'undefined' || !navigator.permissions?.query) return 'unsupported'
+  try {
+    const status = await navigator.permissions.query({
+      name: 'microphone' as PermissionName,
+    })
+    return status.state
+  } catch {
+    // Some browsers throw on unknown permission names.
+    return 'unsupported'
+  }
+}
+
 /** Get the shared mic stream, requesting permission only if we don't have a live one. */
 export async function acquireMic(): Promise<MediaStream> {
   if (hasLiveAudio(cached)) return cached

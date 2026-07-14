@@ -42,7 +42,7 @@ export function AnalyticsConsentNotice() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12 }}
           transition={{ duration: 0.3 }}
-          className="rounded-card border-ink/10 bg-canvas fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-50 flex flex-col gap-3 border p-4 shadow-lg sm:inset-x-auto sm:left-4 sm:w-72"
+          className="rounded-card border-ink/10 bg-canvas fixed inset-x-4 bottom-[calc(1rem_+_env(safe-area-inset-bottom))] z-50 flex flex-col gap-3 border p-4 shadow-lg sm:inset-x-auto sm:right-4 sm:w-72"
         >
           <div>
             <p className="text-sm font-medium">Can we use cookies?</p>
