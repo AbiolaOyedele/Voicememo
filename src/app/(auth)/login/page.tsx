@@ -6,6 +6,8 @@ import { motion } from 'framer-motion'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
 import { enableGuest } from '@/lib/guest'
 import { Logo } from '@/components/ui/Logo'
+import { AnalyticsConsentNotice } from '@/components/analytics/AnalyticsConsentNotice'
+import { publicEnv } from '@/config/env'
 
 /**
  * Sign-in screen. Email magic link (works with the enabled email provider) plus
@@ -148,7 +150,27 @@ export default function LoginPage() {
             </p>
           ) : null}
         </div>
+
+        <p className="text-muted mt-4 text-center text-xs leading-snug">
+          By continuing, you agree to Dumpty&apos;s{' '}
+          <a
+            href={`${publicEnv.NEXT_PUBLIC_MARKETING_URL}/terms`}
+            className="underline underline-offset-4"
+          >
+            Terms
+          </a>{' '}
+          and{' '}
+          <a
+            href={`${publicEnv.NEXT_PUBLIC_MARKETING_URL}/privacy`}
+            className="underline underline-offset-4"
+          >
+            Privacy Policy
+          </a>
+          .
+        </p>
       </motion.div>
+
+      <AnalyticsConsentNotice />
 
       {/* Skip → guest */}
       <motion.button

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getOptionalUser } from '@/middleware/auth'
 import { SignOutButton } from '@/components/features/account/SignOutButton'
+import { ExportDataButton } from '@/components/features/account/ExportDataButton'
 import { DeleteAccountButton } from '@/components/features/account/DeleteAccountButton'
 import { FeedbackButton } from '@/components/features/account/FeedbackButton'
 import { NotificationsToggle } from '@/components/features/account/NotificationsToggle'
@@ -67,7 +68,7 @@ export default async function AccountPage() {
         <section className="flex flex-col gap-2">
           <h2 className="text-muted px-1 text-xs tracking-wide uppercase">Settings</h2>
           <ul className="rounded-card divide-ink/10 border-ink/10 divide-y border">
-            <SettingRow label="Export your data" hint="Coming soon" />
+            <ExportDataButton />
             <NotificationsToggle />
             <AdminLinkRow />
             <FeedbackButton />
@@ -85,14 +86,5 @@ export default async function AccountPage() {
         <SignOutButton />
       </Reveal>
     </main>
-  )
-}
-
-function SettingRow({ label, hint }: { label: string; hint: string }) {
-  return (
-    <li className="flex items-center justify-between px-4 py-3.5">
-      <span className="text-[15px]">{label}</span>
-      <span className="text-muted text-xs">{hint}</span>
-    </li>
   )
 }

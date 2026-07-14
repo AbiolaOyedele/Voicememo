@@ -12,12 +12,19 @@ const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   NEXT_PUBLIC_SITE_URL: z.string().url(),
+  // The separate marketing site (landing page, privacy, terms) this app links
+  // out to — the app itself no longer hosts any of that content.
+  NEXT_PUBLIC_MARKETING_URL: z.string().url(),
   // Deploy-freshness detection (set in next.config.ts from the Vercel commit
   // SHA). Compared against /api/v1/version to detect a newer live deploy.
   NEXT_PUBLIC_BUILD_ID: z.string().optional(),
   // Web Push VAPID public key (safe to expose; the private key is server-only).
   // The browser needs it to create a push subscription.
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
+  // PostHog (product analytics). While unset, tracking is a no-op — nothing
+  // is sent, and posthog.ts / posthog-server.ts skip client construction.
+  NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1).optional(),
+  NEXT_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
 })
 
 type PublicEnv = z.infer<typeof publicSchema>
@@ -31,8 +38,11 @@ const publicParsed = publicSchema.safeParse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_MARKETING_URL: process.env.NEXT_PUBLIC_MARKETING_URL,
   NEXT_PUBLIC_BUILD_ID: process.env.NEXT_PUBLIC_BUILD_ID,
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+  NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+  NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
 })
 
 if (!publicParsed.success && !isBuildPhase) {

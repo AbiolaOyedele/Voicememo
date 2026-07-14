@@ -3,6 +3,7 @@ import './globals.css'
 import { noirPro, dumptyLogo } from './fonts'
 import { ToastProvider } from '@/components/ui/Toast'
 import { VisitTracker } from '@/components/ui/VisitTracker'
+import PostHogProvider from '@/components/analytics/PostHogProvider'
 import { publicEnv } from '@/config/env'
 
 export const metadata: Metadata = {
@@ -46,8 +47,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${noirPro.variable} ${dumptyLogo.variable} h-full antialiased`}>
       <body className="bg-canvas text-ink flex min-h-full flex-col">
-        <VisitTracker />
-        <ToastProvider>{children}</ToastProvider>
+        <PostHogProvider>
+          <VisitTracker />
+          <ToastProvider>{children}</ToastProvider>
+        </PostHogProvider>
       </body>
     </html>
   )

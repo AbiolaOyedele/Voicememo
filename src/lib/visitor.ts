@@ -3,6 +3,10 @@
  * the admin dashboard can show how many people try the app, not just how many
  * sign up. No PII, never tied to an account — just a random id scoped to this
  * site, recorded once per browser.
+ *
+ * Callers must only invoke {@link trackVisit} once analytics consent has been
+ * granted (see analytics-consent.ts) — this module has no consent check of its
+ * own, since it's the same category of non-essential tracking as PostHog.
  */
 
 const VISITOR_COOKIE = 'dumpty_vid'
