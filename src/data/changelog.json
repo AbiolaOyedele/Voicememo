@@ -1,5 +1,19 @@
 [
   {
+    "version": "1.1.0",
+    "date": "14 July 2026",
+    "title": "Reminders",
+    "highlight": "Reminders — tell Dumpty to remind you about an idea and it'll notify you at the right time.",
+    "features": [
+      "Ask Dumpty to remind you about an idea — say something like \"remind me tomorrow evening\" and it'll send you a notification at the right time"
+    ],
+    "improvements": [],
+    "fixes": [
+      "Signing in with an email link now works correctly",
+      "Fixed the app asking for microphone access unexpectedly"
+    ]
+  },
+  {
     "version": "1.0.1",
     "date": "13 July 2026",
     "title": "Polish and fixes",

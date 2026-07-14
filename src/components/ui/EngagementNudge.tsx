@@ -61,7 +61,7 @@ export function EngagementNudge() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-sm"
           >
-            <div className="rounded-card border-ink/10 bg-canvas flex items-center gap-2 border p-3 shadow-lg">
+            <div className="flex items-center gap-2 p-3">
               <div className="min-w-0 flex-1 py-1">
                 <p className="text-[15px]">{copy.title}</p>
                 <p className="text-muted text-xs">{copy.sub}</p>

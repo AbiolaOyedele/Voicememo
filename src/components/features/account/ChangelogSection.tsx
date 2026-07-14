@@ -3,15 +3,7 @@
 import { useState } from 'react'
 import { CenterDialog } from '@/components/ui/CenterDialog'
 import changelogData from '@/data/changelog.json'
-
-interface ChangelogEntry {
-  version: string
-  date: string
-  title: string
-  features: string[]
-  improvements: string[]
-  fixes: string[]
-}
+import type { ChangelogEntry } from '@/types/changelog'
 
 const entries = changelogData as ChangelogEntry[]
 

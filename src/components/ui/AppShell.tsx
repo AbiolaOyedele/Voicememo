@@ -16,6 +16,7 @@ import { Splash } from './Splash'
 import { EngagementNudge } from './EngagementNudge'
 import { PullToRefresh } from './PullToRefresh'
 import { UpdatePrompt } from './UpdatePrompt'
+import { WhatsNewPrompt } from './WhatsNewPrompt'
 import { SwipeCarousel } from './SwipeCarousel'
 
 /** Exact tab routes get the swipe carousel; deeper paths (e.g. a dump detail) render normally. */
@@ -72,6 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </RefreshControlContext.Provider>
       <EngagementNudge />
       <UpdatePrompt />
+      <WhatsNewPrompt />
     </>
   )
 }
