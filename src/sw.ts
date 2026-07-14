@@ -45,7 +45,7 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'Dumpty'
   const options: NotificationOptions = {
     body: payload.body || '',
-    icon: '/icons/icon.svg',
+    icon: '/icons/icon-192.png',
     data: { url: payload.url || '/' },
   }
   event.waitUntil(self.registration.showNotification(title, options))
