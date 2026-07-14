@@ -39,6 +39,8 @@ export interface CreateUploadRequest {
   duration_seconds: number
   content_type: string
   size_bytes: number
+  /** IANA timezone from the browser (e.g. "America/Los_Angeles"), used to resolve spoken reminders. */
+  timezone: string
 }
 
 /** Presigned upload target returned to the client. */
@@ -52,4 +54,14 @@ export interface CreateUploadResponse {
 
 export interface DumpIdRequest {
   dumpId: string
+}
+
+// --- /api/v1/dumps/[id]/reminder ---
+
+/** GET /api/v1/dumps/[id]/reminder response. */
+export interface ReminderSummary {
+  id: string
+  remind_at: string
+  message: string
+  status: 'pending' | 'sent' | 'cancelled'
 }

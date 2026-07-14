@@ -11,8 +11,9 @@ import {
 /**
  * Cookie consent, asked once on the login screen — the one entry point every
  * visitor passes through before reaching the app, rather than a site-wide
- * banner. Non-blocking: email, Google, and guest sign-in all work regardless
- * of whether this has been answered yet.
+ * banner. Renders as a small fixed corner card (not inline in the page flow)
+ * so it never pushes other content around. Non-blocking: email, Google, and
+ * guest sign-in all work regardless of whether this has been answered yet.
  */
 export function AnalyticsConsentNotice() {
   // Starts "decided" so there's no flash of the notice before the cookie
@@ -37,30 +38,32 @@ export function AnalyticsConsentNotice() {
     <AnimatePresence>
       {!decided ? (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8 }}
+          exit={{ opacity: 0, y: 12 }}
           transition={{ duration: 0.3 }}
-          className="rounded-btn border-ink/10 bg-ink/[0.03] mt-4 flex w-full max-w-xs flex-col gap-2 border p-3 text-center"
+          className="rounded-card border-ink/10 bg-canvas fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-50 flex flex-col gap-3 border p-4 shadow-lg sm:inset-x-auto sm:left-4 sm:w-72"
         >
-          <p className="text-muted text-xs leading-snug">
-            We use PostHog to see how Dumpty is used, so we can improve it. Your recordings and
-            note content are never tracked.
-          </p>
-          <div className="flex items-center justify-center gap-4">
+          <div>
+            <p className="text-sm font-medium">Can we use cookies?</p>
+            <p className="text-muted mt-1 text-xs leading-snug">
+              We use cookies to understand how Dumpty is used and improve the app.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={decline}
-              className="text-muted hover:text-ink flex min-h-11 items-center px-2 text-xs underline underline-offset-4 transition-colors"
+              className="rounded-btn border-ink/15 text-ink hover:bg-ink/[0.04] flex min-h-11 flex-1 items-center justify-center border px-4 text-sm transition-colors"
             >
               Decline
             </button>
             <button
               type="button"
               onClick={accept}
-              className="rounded-btn bg-flame flex min-h-11 items-center px-4 text-xs text-white transition-opacity hover:opacity-90"
+              className="rounded-btn bg-flame flex min-h-11 flex-1 items-center justify-center px-4 text-sm text-white transition-opacity hover:opacity-90"
             >
-              Accept analytics
+              Accept
             </button>
           </div>
         </motion.div>

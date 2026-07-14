@@ -36,6 +36,7 @@ export async function uploadRecording(
     duration_seconds: recording.durationSeconds,
     content_type: recording.mimeType,
     size_bytes: recording.blob.size,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   })
   onProgress?.(10)
 

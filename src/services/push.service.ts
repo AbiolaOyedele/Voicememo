@@ -8,6 +8,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase-admin'
 import {
   deleteSubscriptionByEndpoint,
   listAllSubscriptions,
+  listSubscriptionsByUserId,
   upsertSubscription,
 } from '@/repositories/push.repository'
 
@@ -142,4 +143,43 @@ export async function broadcastPush(input: unknown): Promise<BroadcastResult> {
 
   logger.info({ sent, failed, pruned, total: subs.length }, 'Push broadcast complete')
   return { sent, failed, pruned, total: subs.length }
+}
+
+/** A push notification's content — title, body, and the URL to open on tap. */
+export interface PushPayload {
+  title: string
+  body: string
+  url: string
+}
+
+/**
+ * Send a notification to every device one user has subscribed on (e.g. a
+ * reminder). Dead endpoints (404/410) are pruned as we go, same as
+ * {@link broadcastPush}. Not an error if the user has no subscriptions —
+ * callers that need to know can inspect the returned counts.
+ */
+export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
+  ensureConfigured()
+  const admin = createAdminSupabaseClient()
+  const subs = await listSubscriptionsByUserId(admin, userId)
+  const body = JSON.stringify(payload)
+
+  await Promise.all(
+    subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          body,
+        )
+      } catch (error) {
+        const statusCode =
+          typeof error === 'object' && error !== null && 'statusCode' in error
+            ? (error as { statusCode?: number }).statusCode
+            : undefined
+        if (statusCode === 404 || statusCode === 410) {
+          await deleteSubscriptionByEndpoint(admin, sub.endpoint).catch(() => {})
+        }
+      }
+    }),
+  )
 }

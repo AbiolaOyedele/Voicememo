@@ -115,6 +115,9 @@ const uploadSchema = z.object({
   // bound into the presigned PUT URL so R2 rejects an upload of a different
   // size (see createPresignedUploadUrl).
   size_bytes: z.number().int().min(1).max(MAX_UPLOAD_BYTES),
+  // IANA timezone from the browser, so a spoken reminder ("remind me this
+  // evening") resolves against the zone the user was actually in.
+  timezone: z.string().trim().min(1).max(100),
 })
 
 /**
@@ -137,11 +140,12 @@ export async function prepareUpload(
     )
   }
 
-  const { duration_seconds, content_type, size_bytes } = parsed.data
+  const { duration_seconds, content_type, size_bytes, timezone } = parsed.data
   const dump = await insertDump(supabase, {
     userId,
     durationSeconds: duration_seconds,
     status: 'uploading',
+    timezone,
   })
 
   const key = buildAudioKey(userId, dump.id, content_type)

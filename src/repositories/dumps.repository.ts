@@ -17,6 +17,8 @@ export interface CreateDumpInput {
   durationSeconds: number
   r2AudioKey?: string | null
   status?: DumpStatus
+  /** IANA timezone captured from the browser at record time. */
+  timezone?: string | null
 }
 
 export interface UpdateDumpPatch {
@@ -41,6 +43,7 @@ export async function insertDump(supabase: SupabaseClient, input: CreateDumpInpu
       duration_seconds: input.durationSeconds,
       r2_audio_key: input.r2AudioKey ?? null,
       status: input.status ?? 'processing',
+      timezone: input.timezone ?? null,
     })
     .select()
     .single()

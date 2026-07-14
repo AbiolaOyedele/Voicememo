@@ -60,6 +60,17 @@ const serverSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().min(1).optional(),
   VAPID_SUBJECT: z.string().min(1).default('mailto:hello@theruff.agency'),
 
+  // Upstash QStash — schedules the one-off callback that delivers a voice
+  // reminder at its resolved time, and verifies that callback's signature when
+  // it arrives. Optional so boot doesn't hard-fail before it's set; the
+  // reminders service/route refuse to run (503/401) until it is.
+  // QSTASH_URL is region-specific (e.g. the eu-central-1 endpoint) — omit to
+  // fall back to the SDK's global default.
+  QSTASH_URL: z.string().url().optional(),
+  QSTASH_TOKEN: z.string().min(1).optional(),
+  QSTASH_CURRENT_SIGNING_KEY: z.string().min(1).optional(),
+  QSTASH_NEXT_SIGNING_KEY: z.string().min(1).optional(),
+
   // App
   NEXT_PUBLIC_SITE_URL: z.string().url(),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

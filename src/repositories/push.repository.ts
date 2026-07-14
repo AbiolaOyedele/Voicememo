@@ -69,6 +69,21 @@ export async function listAllSubscriptions(
   return data as PushSubscriptionRecord[]
 }
 
+/** Every subscription belonging to one user. Service-role client only. */
+export async function listSubscriptionsByUserId(
+  admin: SupabaseClient,
+  userId: string,
+): Promise<PushSubscriptionRecord[]> {
+  const { data, error } = await admin
+    .from(PUSH_TABLE)
+    .select('endpoint, p256dh, auth')
+    .eq('user_id', userId)
+  if (error) {
+    throw new AppError(502, 'Could not load subscriptions.', 'DB_PUSH_LIST_USER_FAILED', error)
+  }
+  return data as PushSubscriptionRecord[]
+}
+
 /** Count of subscriptions. Service-role client only. */
 export async function countSubscriptions(admin: SupabaseClient): Promise<number> {
   const { count, error } = await admin

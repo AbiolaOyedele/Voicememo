@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useRegisterRefresh } from '@/hooks/useRefreshControl'
 import { readCachedDump, upsertCachedDump, removeCachedDump } from '@/lib/dumps-cache'
 import { ExportActions } from '@/components/features/library/ExportActions'
+import { ReminderSection } from '@/components/features/library/ReminderSection'
 import { ChevronDownIcon, ChevronLeftIcon, StarIcon, TrashIcon } from '@/components/ui/icons'
 import { formatDuration } from '@/utils/audio'
 import { formatDayLabel, formatTime } from '@/utils/date'
@@ -198,6 +199,7 @@ export default function DumpDetailPage() {
             </p>
           )}
 
+          {dump.status === 'ready' ? <ReminderSection dumpId={dump.id} /> : null}
           {dump.status === 'ready' ? <ActionPlanSection dump={dump} onUpdate={setDump} /> : null}
           {dump.status === 'ready' ? <ExportActions dump={dump} /> : null}
         </article>

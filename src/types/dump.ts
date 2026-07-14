@@ -66,6 +66,8 @@ export interface Dump {
   duration_seconds: number
   is_pinned: boolean
   status: DumpStatus
+  /** IANA timezone captured from the browser at record time (e.g. "America/Los_Angeles"). */
+  timezone: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
