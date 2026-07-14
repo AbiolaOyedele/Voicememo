@@ -5,22 +5,42 @@ import { publicEnv } from '@/config/env'
 /** Paths reachable without a session. Everything else (except APIs) needs auth. */
 const AUTH_PATHS = ['/login', '/callback']
 
+/** Production subdomains: marketing lives on www, the app lives on app.*. */
+const MARKETING_HOST = 'www.trydumpty.com'
+const APP_HOST = 'app.trydumpty.com'
+
+/** Public marketing/legal pages served directly on the marketing subdomain. */
+const MARKETING_PATHS = ['/', '/privacy', '/terms']
+
 /**
  * Refreshes the Supabase session and applies page-level route protection:
  * signed-out users are sent to /login, signed-in users are kept out of the auth
  * pages. API routes are never redirected — they enforce auth themselves and
  * return 401 JSON. Server data access is always re-checked via requireUser().
  *
- * Deliberately single-origin: everything (marketing, login, record, etc.)
- * serves from the one domain. A same-day attempt to split marketing onto
- * www.trydumpty.com and the app onto app.trydumpty.com broke recording
- * uploads in production — the client PUTs audio directly to R2 from the
- * browser, and R2's bucket CORS policy only allowlists the single original
- * origin, not the new app subdomain. Reverted rather than chasing a CORS
- * config change under time pressure; revisit the subdomain split together
- * with updating R2's CORS policy if it's still wanted.
+ * NOTE: an earlier attempt at this same www/app split broke recording
+ * uploads — the client PUTs audio directly to R2 from the browser, and R2's
+ * bucket CORS policy only allowlisted the pre-split single origin, not
+ * app.trydumpty.com. R2's CORS policy has since been updated to explicitly
+ * allow both https://app.trydumpty.com and https://www.trydumpty.com for
+ * PUT/GET (verified via a manual preflight check). Re-verify a real save
+ * completes end to end after any further change here.
  */
 export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const host = request.headers.get('host') ?? ''
+
+  // The marketing subdomain only ever serves the landing page and public legal
+  // pages, and never consults auth state — that decision belongs entirely to
+  // app.trydumpty.com. Any other path reaching this host is an old app
+  // link/bookmark.
+  if (host === MARKETING_HOST) {
+    const { pathname, search } = request.nextUrl
+    if (MARKETING_PATHS.includes(pathname)) {
+      return NextResponse.next({ request })
+    }
+    return NextResponse.redirect(new URL(`https://${APP_HOST}${pathname}${search}`))
+  }
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -51,10 +71,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
   const isApi = pathname.startsWith('/api')
   const isAuthPath = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
-  // Legal pages are public everywhere, signed in or not.
+  // Legal pages are public everywhere (any host, signed in or not).
   const isPublicPage = pathname === '/privacy' || pathname === '/terms'
-  // The bare domain serves the public marketing landing page.
-  const isLanding = pathname === '/'
+  // On the app subdomain, '/' never shows marketing — it resolves straight into
+  // the app. Elsewhere (local dev, preview deployments) app and marketing share
+  // one origin, so '/' still serves the landing page there.
+  const isAppHost = host === APP_HOST
+  const isLanding = pathname === '/' && !isAppHost
   // Guests get local-only access to the main app via a cookie (no server session).
   const isGuest = request.cookies.get('dumpty_guest')?.value === '1'
   // Once someone has signed in, we remember this browser so that after they sign
@@ -69,6 +92,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     })
   }
 
+  if (isAppHost && pathname === '/') {
+    return redirectPreservingCookies(request, response, user || isGuest ? '/record' : '/login')
+  }
   if (!user && !isGuest && !isApi && !isAuthPath && !isLanding && !isPublicPage) {
     return redirectPreservingCookies(request, response, '/login')
   }
