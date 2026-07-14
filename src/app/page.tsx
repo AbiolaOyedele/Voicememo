@@ -1,23 +1,20 @@
 import type { Metadata } from 'next'
 import { CinematicHero } from '@/components/ui/cinematic-landing-hero'
 import { LandingNav } from '@/components/ui/landing-nav'
-import { publicEnv } from '@/config/env'
 
 /**
- * Root route — the Dumpty marketing landing page, served on the www subdomain.
- * The app itself (login, record, etc.) lives on a separate subdomain, so the
- * "Try Dumpty" CTA must be an absolute cross-origin link rather than a relative
- * path.
+ * Root route — the Dumpty marketing landing page. Signed-out visitors to the
+ * bare domain see this; the "Try Dumpty" CTA sends them to /login. Signed-in
+ * (and guest) users are routed straight to the app by the middleware.
  */
 
 /**
  * Hardcoded rather than derived from `NEXT_PUBLIC_SITE_URL` (and thus
- * `metadataBase`) on purpose — that env var points at app.trydumpty.com, the
- * app subdomain, which is correct for the app's own absolute links but wrong
- * here: it made canonical/og:url/og:image resolve to app.trydumpty.com,
- * whose `/` immediately redirects to /login. This mirrors the same
- * www.trydumpty.com constant middleware.ts already hardcodes as the
- * marketing host.
+ * `metadataBase`) on purpose — that env var points at app.trydumpty.com,
+ * which is correct for the app's own absolute links but wrong here: it made
+ * canonical/og:url/og:image resolve to app.trydumpty.com, whose `/`
+ * immediately redirects to /login. This is purely the SEO-preferred URL for
+ * this page; the app itself is single-origin (see middleware.ts).
  */
 const MARKETING_SITE_URL = 'https://www.trydumpty.com'
 
@@ -39,11 +36,10 @@ export const metadata: Metadata = {
 }
 
 export default function RootPage() {
-  const ctaHref = `${publicEnv.NEXT_PUBLIC_SITE_URL}/login`
   return (
     <main className="bg-canvas text-ink min-h-screen w-full overflow-x-hidden">
-      <LandingNav ctaHref={ctaHref} />
-      <CinematicHero ctaHref={ctaHref} />
+      <LandingNav ctaHref="/login" />
+      <CinematicHero ctaHref="/login" />
     </main>
   )
 }
