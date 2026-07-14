@@ -3,8 +3,13 @@ import './globals.css'
 import { noirPro, dumptyLogo } from './fonts'
 import { ToastProvider } from '@/components/ui/Toast'
 import { VisitTracker } from '@/components/ui/VisitTracker'
+import { publicEnv } from '@/config/env'
 
 export const metadata: Metadata = {
+  // Resolves relative canonical URLs and the auto-detected opengraph-image
+  // route to absolute URLs — without this, social crawlers get a relative
+  // (broken) og:image URL.
+  metadataBase: new URL(publicEnv.NEXT_PUBLIC_SITE_URL),
   title: {
     default: 'Dumpty',
     template: '%s · Dumpty',

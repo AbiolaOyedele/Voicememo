@@ -5,6 +5,13 @@ import { publicEnv } from '@/config/env'
 /** Paths reachable without a session. Everything else (except APIs) needs auth. */
 const AUTH_PATHS = ['/login', '/callback']
 
+/** Production subdomains: marketing lives on www, the app lives on app.*. */
+const MARKETING_HOST = 'www.trydumpty.com'
+const APP_HOST = 'app.trydumpty.com'
+
+/** Public marketing/legal pages served directly on the marketing subdomain. */
+const MARKETING_PATHS = ['/', '/privacy', '/terms']
+
 /**
  * Refreshes the Supabase session and applies page-level route protection:
  * signed-out users are sent to /login, signed-in users are kept out of the auth
@@ -12,6 +19,20 @@ const AUTH_PATHS = ['/login', '/callback']
  * return 401 JSON. Server data access is always re-checked via requireUser().
  */
 export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const host = request.headers.get('host') ?? ''
+
+  // The marketing subdomain only ever serves the landing page and public legal
+  // pages, and never consults auth state — that decision belongs entirely to
+  // app.trydumpty.com. Any other path reaching this host is an old app
+  // link/bookmark.
+  if (host === MARKETING_HOST) {
+    const { pathname, search } = request.nextUrl
+    if (MARKETING_PATHS.includes(pathname)) {
+      return NextResponse.next({ request })
+    }
+    return NextResponse.redirect(new URL(`https://${APP_HOST}${pathname}${search}`))
+  }
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -42,8 +63,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
   const isApi = pathname.startsWith('/api')
   const isAuthPath = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
-  // The bare domain serves the public marketing landing page.
-  const isLanding = pathname === '/'
+  // Legal pages are public everywhere (any host, signed in or not).
+  const isPublicPage = pathname === '/privacy' || pathname === '/terms'
+  // On the app subdomain, '/' never shows marketing — it resolves straight into
+  // the app. Elsewhere (local dev, preview deployments) app and marketing share
+  // one origin, so '/' still serves the landing page there.
+  const isAppHost = host === APP_HOST
+  const isLanding = pathname === '/' && !isAppHost
   // Guests get local-only access to the main app via a cookie (no server session).
   const isGuest = request.cookies.get('dumpty_guest')?.value === '1'
   // Once someone has signed in, we remember this browser so that after they sign
@@ -58,7 +84,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     })
   }
 
-  if (!user && !isGuest && !isApi && !isAuthPath && !isLanding) {
+  if (isAppHost && pathname === '/') {
+    return redirectPreservingCookies(request, response, user || isGuest ? '/record' : '/login')
+  }
+  if (!user && !isGuest && !isApi && !isAuthPath && !isLanding && !isPublicPage) {
     return redirectPreservingCookies(request, response, '/login')
   }
   if (user && isAuthPath) {
@@ -98,9 +127,14 @@ export const config = {
     /*
      * Match all request paths except static assets and files:
      * - _next/static, _next/image
-     * - favicon, manifest, icons
+     * - favicon, manifest, icons, the OG image route
      * - common image/font extensions
+     *
+     * opengraph-image must stay unauthenticated like icon/apple-icon — link
+     * crawlers (Slack, iMessage, Twitter) hit it with no session and no
+     * guest cookie, so without this exclusion it 302s to /login and every
+     * shared link loses its preview image.
      */
-    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|manifest.webmanifest|sw.js|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|opengraph-image|manifest.webmanifest|sw.js|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2)$).*)',
   ],
 }

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import Lenis from 'lenis'
 import { Mic, Sparkles, ListTree, ListChecks, List, User, type LucideIcon } from 'lucide-react'
 import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb'
 import { ThoughtStream } from '@/components/ui/thought-stream'
@@ -141,6 +142,7 @@ const INJECTED_STYLES = `
   .hero-logo { animation: hero-rise 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0s both; }
   .text-track { animation: hero-rise 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
   .text-days { animation: hero-wipe 1.3s cubic-bezier(0.76, 0, 0.24, 1) 0.9s both; }
+  .hero-desc { animation: hero-rise 1.4s cubic-bezier(0.16, 1, 0.3, 1) 1.1s both; }
   .hero-cta { animation: hero-rise 1.4s cubic-bezier(0.16, 1, 0.3, 1) 1.4s both; }
 
   /* "Typical." settles as silver, wipes out, then wipes back in as the
@@ -170,6 +172,15 @@ export interface CinematicHeroProps extends React.HTMLAttributes<HTMLDivElement>
   highlightWord?: string
   cardHeading?: string
   cardDescription?: React.ReactNode
+  /**
+   * Short description shown directly under the headline via the same
+   * CSS-only entrance as the logo/headline/CTA, so it's guaranteed visible on
+   * load — independent of scroll or GSAP. Everything else below this fold is
+   * gated behind `.gsap-reveal` (scroll-triggered), so this line carries the
+   * page's "what is this app" explanation for anyone who never scrolls
+   * (crawlers, link previews, slow connections).
+   */
+  heroDescription?: string
   ctaHeading?: string
   ctaDescription?: string
   /** Where the primary "Try Dumpty" button points. */
@@ -182,15 +193,10 @@ export function CinematicHero({
   tagline2 = 'Then you lost it.',
   highlightWord = 'Typical.',
   cardHeading = 'Raw thoughts in, tidy ideas out.',
-  cardDescription = (
-    <>
-      Ideas don&apos;t wait for a notebook. Dump them into{' '}
-      <span className="font-semibold text-white">Dumpty</span> raw, we&apos;ll transcribe it, tidy it
-      up, and split it by topic so future you doesn&apos;t have to untangle past you&apos;s rambling.
-    </>
-  ),
+  heroDescription = 'Dumpty is an idea notes app that transcribes and organizes your brilliant ideas, so nothing gets lost and you can always come back to them.',
+  cardDescription = 'Dumpty is a voice notes app for capturing ideas the moment they hit. Just talk, and Dumpty transcribes what you said, removes the rambling, and splits it by topic so you get back clean, organized notes you can actually use later.',
   ctaHeading = 'Stop losing your best ideas.',
-  ctaDescription = 'One voice note is all it takes. Dumpty cleans it, sorts it, and hands you back a to-do list, so that 3am shower thought doesn’t die in your Notes app.',
+  ctaDescription = 'Dumpty is an idea capture app built for how your brain actually works. Talk it out in one take, and Dumpty transcribes, cleans up, and organizes it into readable notes. No typing, and no more forgetting what you meant.',
   ctaHref = '/login',
   className,
   ...props
@@ -212,8 +218,15 @@ export function CinematicHero({
     setTypicalPhase((p) => (p === 'out' ? 'flame' : p))
   }
 
-  // 1. High-performance mouse interaction (requestAnimationFrame throttled)
+  // 1. High-performance mouse interaction (requestAnimationFrame throttled).
+  // Skipped entirely on coarse pointers (touch has no hover) and for anyone
+  // who has asked the OS for reduced motion — it's pure decoration, not
+  // required to use the page, so there's no reason to pay for it there.
   useEffect(() => {
+    const hasFinePointer = window.matchMedia('(pointer: fine)').matches
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!hasFinePointer || prefersReducedMotion) return
+
     const handleMouseMove = (e: MouseEvent) => {
       const { w: vw, h: vh } = viewport()
       if (window.scrollY > vh * 2) return
@@ -253,10 +266,29 @@ export function CinematicHero({
   useEffect(() => {
     const { w: vw, h: vh } = viewport()
     const isMobile = vw < 768
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     // Clear any triggers orphaned by a hot-module reload so a stale pin can't
     // leave the reveal elements stuck hidden. No-op on a clean production mount.
     ScrollTrigger.getAll().forEach((t) => t.kill())
+
+    // Lenis replaces the browser's native (notchy, per-wheel-tick) scroll with
+    // an eased virtual one, then feeds ScrollTrigger from that instead of raw
+    // scroll events — this is what actually smooths the *feel* of scrolling.
+    // Skipped for reduced-motion: those users get raw, immediate scroll input
+    // rather than an artificially eased one. Driven off GSAP's own ticker
+    // (rather than Lenis's internal rAF) so there's a single frame loop, and
+    // `lagSmoothing(0)` stops GSAP from trying to "catch up" after a tab goes
+    // background, which fights Lenis's own easing.
+    let lenis: Lenis | null = null
+    let lenisTick: ((time: number) => void) | null = null
+    if (!prefersReducedMotion) {
+      lenis = new Lenis({ duration: 1.1 })
+      lenis.on('scroll', ScrollTrigger.update)
+      lenisTick = (time: number) => lenis?.raf(time * 1000)
+      gsap.ticker.add(lenisTick)
+      gsap.ticker.lagSmoothing(0)
+    }
 
     const ctx = gsap.context(() => {
       gsap.set('.main-card', { y: vh + 200, autoAlpha: 1 })
@@ -273,17 +305,35 @@ export function CinematicHero({
         ],
         { autoAlpha: 0 }
       )
-      gsap.set('.cta-wrapper', { autoAlpha: 0, scale: 0.8, filter: 'blur(30px)' })
+      gsap.set('.cta-wrapper', { autoAlpha: 0, scale: 0.8 })
 
       // The hero entrance is handled by CSS keyframes (see INJECTED_STYLES);
       // GSAP only owns the scroll-driven choreography below.
+      //
+      // Total pin distance and the `{}` hold tweens below are deliberately
+      // tight: the first pass at this timeline (5200px, longer holds) left a
+      // stretch after the hero fades where the orange card is still sliding
+      // into place but nothing new is happening — long enough on a real
+      // trackpad to read as "did scrolling stop working?". Shortening both
+      // keeps every beat purposeful without cutting any reveal.
+      //
+      // None of these scrubbed tweens animate `filter: blur()` — blur is by
+      // far the most expensive CSS property to recompute every scroll tick
+      // (it can't ride the compositor the way transform/opacity can), and
+      // scrub re-evaluates it on every single scroll event. The one-time CSS
+      // keyframe blur in the hero's entrance (INJECTED_STYLES) is fine — it
+      // plays once on mount, not once per scroll frame.
       const scrollTl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=5200',
+          end: '+=4400',
           pin: true,
-          scrub: 1,
+          // `true`, not a numeric lag — Lenis above already eases the scroll
+          // position itself. A numeric scrub would ease the timeline *again*
+          // on top of that, which is what made earlier passes feel mushy
+          // instead of smooth.
+          scrub: true,
           anticipatePin: 1,
         },
       })
@@ -291,7 +341,7 @@ export function CinematicHero({
       scrollTl
         .to(
           ['.hero-text-wrapper', '.bg-grid-theme', '.thought-stream'],
-          { scale: 1.15, filter: 'blur(20px)', opacity: 0.2, ease: 'power2.inOut', duration: 2 },
+          { scale: 1.15, opacity: 0.2, ease: 'power2.inOut', duration: 2 },
           0
         )
         .to('.main-card', { y: 0, ease: 'power3.inOut', duration: 2 }, 0)
@@ -303,11 +353,10 @@ export function CinematicHero({
           duration: 1.5,
         })
         // Hold on the brand logo, then let it clear the way for the phone.
-        .to({}, { duration: 0.6 })
+        .to({}, { duration: 0.35 })
         .to('.card-brand-reveal', {
           autoAlpha: 0,
           scale: 1.25,
-          filter: 'blur(10px)',
           ease: 'power2.in',
           duration: 1,
         })
@@ -354,11 +403,11 @@ export function CinematicHero({
             { y: 60, autoAlpha: 0, scale: 0.7, rotationZ: -8 },
             { y: 0, autoAlpha: 1, scale: 1, rotationZ: 0, ease: 'back.out(1.6)', duration: 1 }
           )
-          .to({}, { duration: 0.7 })
+          .to({}, { duration: 0.45 })
       })
 
       scrollTl
-        .to({}, { duration: 0.8 })
+        .to({}, { duration: 0.5 })
         .set('.hero-text-wrapper', { autoAlpha: 0 })
         .set('.cta-wrapper', { autoAlpha: 1 })
         // Clear the phone, badges and side labels.
@@ -386,7 +435,7 @@ export function CinematicHero({
           },
           'pullback'
         )
-        .to('.cta-wrapper', { scale: 1, filter: 'blur(0px)', ease: 'expo.inOut', duration: 1.8 }, 'pullback')
+        .to('.cta-wrapper', { scale: 1, ease: 'expo.inOut', duration: 1.8 }, 'pullback')
         // Card and its ramble text exit upward together, revealing the CTA.
         .to('.main-card', { y: -vh - 300, ease: 'power3.in', duration: 1.5 })
     }, containerRef)
@@ -398,6 +447,8 @@ export function CinematicHero({
     return () => {
       cancelAnimationFrame(refresh)
       ctx.revert()
+      if (lenisTick) gsap.ticker.remove(lenisTick)
+      lenis?.destroy()
     }
   }, [])
 
@@ -443,6 +494,9 @@ export function CinematicHero({
             {highlightWord}
           </span>
         </h1>
+        <p className="hero-desc text-muted mt-4 max-w-md text-base sm:text-lg">
+          {heroDescription}
+        </p>
         <div className="hero-cta pointer-events-auto mt-10">
           <a
             href={ctaHref}
@@ -507,13 +561,17 @@ export function CinematicHero({
 
           <div className="relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col items-center justify-evenly px-4 py-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:px-12 lg:py-0">
             {/* TOP (mobile) / RIGHT (desktop): brand wordmark */}
-            <div className="card-right-text gsap-reveal z-20 order-1 flex w-full justify-center lg:order-3 lg:justify-end">
+            <div className="card-right-text gsap-reveal z-20 order-1 flex w-full flex-col items-center justify-center gap-3 text-center lg:order-3 lg:items-end lg:justify-end lg:text-right">
               <h2
                 className="text-white text-6xl leading-none tracking-tight md:text-[5rem] lg:text-[6.5rem]"
                 style={{ fontFamily: 'var(--font-logo)' }}
               >
                 {brandName}
               </h2>
+              <p className="max-w-xs text-sm font-normal leading-relaxed text-white/85 md:text-base">
+                Tap the orb and speak your idea out loud, Dumpty will transcribe and clean it up
+                for you.
+              </p>
             </div>
 
             {/* MIDDLE (mobile) / CENTER (desktop): iPhone mockup with the real record screen */}
@@ -550,9 +608,6 @@ export function CinematicHero({
                         >
                           Dumpty
                         </span>
-                        <p className="text-muted mt-2 px-2 text-[11px] leading-snug">
-                          Tap the orb before this thought escapes.
-                        </p>
                       </div>
 
                       {/* The app's voice orb, centred and shadow-free */}

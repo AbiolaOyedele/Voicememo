@@ -284,6 +284,8 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     if (!container) return
 
     let rafId = 0
+    let isVisible = true
+    let skipNextDt = false
     // The fragment shader outputs PREMULTIPLIED colour (`col.rgb * col.a`), so the
     // canvas and blend func must both be premultiplied too. Mixing a premultiplied
     // output with `premultipliedAlpha:false` makes the compositor multiply by alpha
@@ -357,9 +359,15 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
 
     const update = (t: number): void => {
       rafId = requestAnimationFrame(update)
+      if (!isVisible) return
       const p = propsRef.current
-      const dt = (t - lastTime) * 0.001
+      // After a pause (orb scrolled off-screen), the first resumed frame would
+      // otherwise see a `dt` spanning the whole time it was hidden and jump the
+      // rotation/level state forward in one tick. Re-anchor instead of skipping
+      // the frame outright, so the shader keeps getting fresh uniforms.
+      const dt = skipNextDt ? 0 : (t - lastTime) * 0.001
       lastTime = t
+      skipNextDt = false
       program.uniforms.iTime.value = t * 0.001
       program.uniforms.hue.value = p.hue
       const core = program.uniforms.baseColor3.value as Vec3
@@ -403,8 +411,25 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
 
     rafId = requestAnimationFrame(update)
 
+    // Both orb instances on the landing page render behind GSAP's `autoAlpha`
+    // (opacity + visibility) gates for most of the pinned scroll sequence, but
+    // `visibility: hidden` doesn't stop a WebGL draw call — without this, two
+    // shaders keep rendering every frame, off-screen or not, fighting the
+    // scroll-driven compositing for GPU time. Gate the actual draw work on
+    // real viewport intersection instead.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const nowVisible = entry?.isIntersecting ?? true
+        if (nowVisible && !isVisible) skipNextDt = true
+        isVisible = nowVisible
+      },
+      { threshold: 0 },
+    )
+    observer.observe(container)
+
     return () => {
       cancelAnimationFrame(rafId)
+      observer.disconnect()
       window.removeEventListener('resize', resize)
       if (container.contains(gl.canvas)) {
         try {
