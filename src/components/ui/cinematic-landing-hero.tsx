@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import Lenis from 'lenis'
 import { Mic, Sparkles, ListTree, ListChecks, List, User, type LucideIcon } from 'lucide-react'
 import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb'
 import { ThoughtStream } from '@/components/ui/thought-stream'
@@ -266,29 +265,10 @@ export function CinematicHero({
   useEffect(() => {
     const { w: vw, h: vh } = viewport()
     const isMobile = vw < 768
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     // Clear any triggers orphaned by a hot-module reload so a stale pin can't
     // leave the reveal elements stuck hidden. No-op on a clean production mount.
     ScrollTrigger.getAll().forEach((t) => t.kill())
-
-    // Lenis replaces the browser's native (notchy, per-wheel-tick) scroll with
-    // an eased virtual one, then feeds ScrollTrigger from that instead of raw
-    // scroll events — this is what actually smooths the *feel* of scrolling.
-    // Skipped for reduced-motion: those users get raw, immediate scroll input
-    // rather than an artificially eased one. Driven off GSAP's own ticker
-    // (rather than Lenis's internal rAF) so there's a single frame loop, and
-    // `lagSmoothing(0)` stops GSAP from trying to "catch up" after a tab goes
-    // background, which fights Lenis's own easing.
-    let lenis: Lenis | null = null
-    let lenisTick: ((time: number) => void) | null = null
-    if (!prefersReducedMotion) {
-      lenis = new Lenis({ duration: 1.1 })
-      lenis.on('scroll', ScrollTrigger.update)
-      lenisTick = (time: number) => lenis?.raf(time * 1000)
-      gsap.ticker.add(lenisTick)
-      gsap.ticker.lagSmoothing(0)
-    }
 
     const ctx = gsap.context(() => {
       gsap.set('.main-card', { y: vh + 200, autoAlpha: 1 })
@@ -329,11 +309,7 @@ export function CinematicHero({
           start: 'top top',
           end: '+=4400',
           pin: true,
-          // `true`, not a numeric lag — Lenis above already eases the scroll
-          // position itself. A numeric scrub would ease the timeline *again*
-          // on top of that, which is what made earlier passes feel mushy
-          // instead of smooth.
-          scrub: true,
+          scrub: 1,
           anticipatePin: 1,
         },
       })
@@ -447,8 +423,6 @@ export function CinematicHero({
     return () => {
       cancelAnimationFrame(refresh)
       ctx.revert()
-      if (lenisTick) gsap.ticker.remove(lenisTick)
-      lenis?.destroy()
     }
   }, [])
 
