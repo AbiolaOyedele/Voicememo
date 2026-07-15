@@ -2,14 +2,24 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { publicEnv } from '@/config/env'
 
-/** Paths reachable without a session. Everything else (except APIs) needs auth. */
+/** Paths reachable without a session. */
 const AUTH_PATHS = ['/login', '/callback']
 
 /**
+ * Real app routes that require a session. A path outside this list isn't a
+ * route at all, so it falls through to Next's own 404 (not-found.tsx)
+ * instead of bouncing an anonymous visitor to /login — there's nothing
+ * sensitive to protect on a page that doesn't exist.
+ */
+const APP_PATHS = ['/record', '/library', '/account', '/humpty']
+
+/**
  * Refreshes the Supabase session and applies page-level route protection:
- * signed-out users are sent to /login, signed-in users are kept out of the auth
- * pages. API routes are never redirected — they enforce auth themselves and
- * return 401 JSON. Server data access is always re-checked via requireUser().
+ * signed-out users hitting a known app path are sent to /login, signed-in
+ * users are kept out of the auth pages, and anything outside APP_PATHS falls
+ * through to Next's own routing/404 regardless of auth state. API routes are
+ * never redirected — they enforce auth themselves and return 401 JSON.
+ * Server data access is always re-checked via requireUser().
  *
  * This app has no marketing/landing content of its own — that lives on the
  * separate marketing site (www.trydumpty.com), which links here for the
@@ -47,13 +57,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const isApi = pathname.startsWith('/api')
   const isAuthPath = AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   const isRoot = pathname === '/'
+  const isKnownAppPath = APP_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   // Guests get local-only access to the main app via a cookie (no server session).
   const isGuest = request.cookies.get('dumpty_guest')?.value === '1'
 
   if (isRoot) {
     return redirectPreservingCookies(request, response, user || isGuest ? '/record' : '/login')
   }
-  if (!user && !isGuest && !isApi && !isAuthPath) {
+  if (!user && !isGuest && !isApi && !isAuthPath && isKnownAppPath) {
     return redirectPreservingCookies(request, response, '/login')
   }
   if (user && isAuthPath) {
