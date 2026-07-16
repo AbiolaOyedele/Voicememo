@@ -56,6 +56,13 @@ export default function RecordPage() {
   // browsers) can't render the orb — swap in a CSS-only stand-in so the
   // record button is never an invisible blank circle.
   const [orbUnavailable, setOrbUnavailable] = useState(false)
+  // `?orb=off` forces the fallback so it can be previewed and tested on
+  // devices where WebGL works fine.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('orb') === 'off') {
+      setOrbUnavailable(true)
+    }
+  }, [])
 
   // First time the user taps to record, show our own primer before the browser's
   // native permission dialog (which we can't restyle). Afterwards, tap straight
