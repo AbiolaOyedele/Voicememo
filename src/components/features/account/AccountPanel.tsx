@@ -9,6 +9,7 @@ import { NotificationsToggle } from '@/components/features/account/Notifications
 import { AdminLinkRow } from '@/components/features/account/AdminLinkRow'
 import { ChangelogSection } from '@/components/features/account/ChangelogSection'
 import { ComingSoonSection } from '@/components/features/account/ComingSoonSection'
+import { MessagesSection } from '@/components/features/account/MessagesSection'
 import { Reveal } from '@/components/ui/Reveal'
 
 /** Read a string field from Supabase user metadata safely. */
@@ -73,6 +74,8 @@ export function AccountPanel() {
           </div>
         </section>
       </Reveal>
+
+      <MessagesSection />
 
       <Reveal delay={0.1}>
         <section className="flex flex-col gap-2">

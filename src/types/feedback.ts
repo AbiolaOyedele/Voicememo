@@ -13,5 +13,9 @@ export interface FeedbackRecord {
   pageUrl: string | null
   appVersion: string | null
   status: FeedbackStatus
+  /** Admin's reply, if one has been sent (also delivered as a user message). */
+  response: string | null
+  /** When the feedback was checked off as done. */
+  resolvedAt: string | null
   createdAt: string
 }
