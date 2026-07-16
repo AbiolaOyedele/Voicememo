@@ -12,9 +12,12 @@
     "improvements": [
       "Ideas that fail to process now explain what happened instead of showing an empty page",
       "Every idea now shows its word count",
-      "Clear your search and tag filters in one tap when nothing matches"
+      "Clear your search and tag filters in one tap when nothing matches",
+      "Pop-up messages now sit on their own card so they don't blend into the page"
     ],
-    "fixes": []
+    "fixes": [
+      "The \"Record a note\" button in the guest library now opens the recorder"
+    ]
   },
   {
     "version": "1.1.0",
