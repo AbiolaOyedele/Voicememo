@@ -217,20 +217,15 @@ export default function RecordPage() {
         ) : (
           <Logo as="h1" className="text-5xl" />
         )}
-        {/* The fallback carries its own "Tap to speak" caption, so the header
-            stays quiet in its idle state instead of repeating it. */}
-        {(() => {
-          const subtitle = isRecording
+        <p className="text-muted mt-1 text-sm">
+          {isRecording
             ? orbUnavailable
               ? 'Say whatever is on your mind. Tap again when you are done.'
               : 'Say whatever is on your mind. Tap the orb when you are done.'
             : showStopped
               ? 'Save it, or record again.'
-              : orbUnavailable
-                ? null
-                : 'Tap the orb to speak your idea freely.'
-          return subtitle ? <p className="text-muted mt-1 text-sm">{subtitle}</p> : null
-        })()}
+              : 'Tap to speak'}
+        </p>
       </header>
 
       <AnimatePresence mode="wait">

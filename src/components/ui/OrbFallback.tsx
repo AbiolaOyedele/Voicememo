@@ -79,7 +79,8 @@ export function OrbFallback({ recording, elapsedSeconds, className }: OrbFallbac
         ))}
       </div>
 
-      <p className="text-flame/80 h-4 text-xs">{recording ? 'Listening...' : 'Tap to speak'}</p>
+      {/* Idle carries no caption — the page header's "Tap to speak" covers it. */}
+      <p className="text-flame/80 h-4 text-xs">{recording ? 'Listening...' : ''}</p>
     </div>
   )
 }
