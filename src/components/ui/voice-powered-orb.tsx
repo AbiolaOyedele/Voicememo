@@ -22,6 +22,12 @@ interface VoicePoweredOrbProps {
    * without opening a microphone. Ignored while a real analyser is active.
    */
   demo?: boolean
+  /**
+   * Called when WebGL isn't available (context creation fails) or the context
+   * is lost at runtime and the orb can't render. Callers should swap in a
+   * non-WebGL fallback — otherwise the orb silently renders nothing.
+   */
+  onUnavailable?: () => void
 }
 
 /** Default deep core tone (#9D2500) — matches the app record screen. */
@@ -164,6 +170,16 @@ const FRAG = /* glsl */ `
 
 type LatestProps = Required<Omit<VoicePoweredOrbProps, 'className'>>
 
+/** True when the browser can create a WebGL context at all. */
+function webglSupported(): boolean {
+  try {
+    const canvas = document.createElement('canvas')
+    return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'))
+  } catch {
+    return false
+  }
+}
+
 /**
  * Animated WebGL orb (ogl) that reacts to microphone loudness. When a shared
  * `mediaStream` is supplied it analyses that instead of opening its own mic, so
@@ -180,6 +196,7 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
   mediaStream = null,
   coreColor = DEFAULT_CORE,
   demo = false,
+  onUnavailable,
 }) => {
   const ctnDom = useRef<HTMLDivElement>(null)
 
@@ -201,6 +218,7 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     mediaStream,
     coreColor,
     demo,
+    onUnavailable: onUnavailable ?? (() => {}),
   })
   propsRef.current = {
     hue,
@@ -212,6 +230,7 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     mediaStream,
     coreColor,
     demo,
+    onUnavailable: onUnavailable ?? (() => {}),
   }
 
   // --- Audio setup: rebuild the analyser when voice control or the stream changes. ---
@@ -300,12 +319,26 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     // output with `premultipliedAlpha:false` makes the compositor multiply by alpha
     // a second time, darkening the glow's soft edge into a grey halo — most visible
     // at low DPR (desktop). Keeping the whole pipeline premultiplied removes it.
-    const renderer = new Renderer({
-      alpha: true,
-      premultipliedAlpha: true,
-      antialias: true,
-      dpr: window.devicePixelRatio || 1,
-    })
+    // WebGL can be missing entirely (old GPUs, Lockdown Mode, some in-app
+    // browsers) or blocked — probe first and bail to the caller's fallback
+    // instead of letting ogl throw and leave a blank circle.
+    if (!webglSupported()) {
+      propsRef.current.onUnavailable()
+      return
+    }
+    let renderer: Renderer
+    try {
+      renderer = new Renderer({
+        alpha: true,
+        premultipliedAlpha: true,
+        antialias: true,
+        dpr: window.devicePixelRatio || 1,
+      })
+      if (!renderer.gl) throw new Error('WebGL context unavailable')
+    } catch {
+      propsRef.current.onUnavailable()
+      return
+    }
     const gl = renderer.gl
     gl.clearColor(0, 0, 0, 0)
     gl.enable(gl.BLEND)
@@ -313,6 +346,21 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
 
     while (container.firstChild) container.removeChild(container.firstChild)
     container.appendChild(gl.canvas)
+
+    // A lost context (GPU memory pressure, backgrounded tab on iOS) leaves the
+    // canvas permanently blank unless the browser restores it. Give it a beat
+    // to restore; if it doesn't, hand over to the fallback.
+    let lostTimer = 0
+    const handleContextLost = (e: Event): void => {
+      e.preventDefault()
+      window.clearTimeout(lostTimer)
+      lostTimer = window.setTimeout(() => propsRef.current.onUnavailable(), 1500)
+    }
+    const handleContextRestored = (): void => {
+      window.clearTimeout(lostTimer)
+    }
+    gl.canvas.addEventListener('webglcontextlost', handleContextLost)
+    gl.canvas.addEventListener('webglcontextrestored', handleContextRestored)
 
     const geometry = new Triangle(gl)
     const program = new Program(gl, {
@@ -440,6 +488,9 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
       cancelAnimationFrame(rafId)
       observer.disconnect()
       window.removeEventListener('resize', resize)
+      window.clearTimeout(lostTimer)
+      gl.canvas.removeEventListener('webglcontextlost', handleContextLost)
+      gl.canvas.removeEventListener('webglcontextrestored', handleContextRestored)
       if (container.contains(gl.canvas)) {
         try {
           container.removeChild(gl.canvas)

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb'
+import { OrbFallback } from '@/components/ui/OrbFallback'
 import { Logo } from '@/components/ui/Logo'
 import { Timer } from '@/components/features/record/Timer'
 import { QueuedIndicator } from '@/components/features/record/QueuedIndicator'
@@ -51,6 +52,10 @@ export default function RecordPage() {
   const [processing, setProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [primerOpen, setPrimerOpen] = useState(false)
+  // Devices without working WebGL (old GPUs, Lockdown Mode, some in-app
+  // browsers) can't render the orb — swap in a CSS-only stand-in so the
+  // record button is never an invisible blank circle.
+  const [orbUnavailable, setOrbUnavailable] = useState(false)
 
   // First time the user taps to record, show our own primer before the browser's
   // native permission dialog (which we can't restyle). Afterwards, tap straight
@@ -266,7 +271,15 @@ export default function RecordPage() {
               aria-pressed={isRecording}
               className="relative h-64 w-64 overflow-hidden rounded-full disabled:opacity-70"
             >
-              <VoicePoweredOrb enableVoiceControl={isRecording} mediaStream={stream} />
+              {orbUnavailable ? (
+                <OrbFallback recording={isRecording} />
+              ) : (
+                <VoicePoweredOrb
+                  enableVoiceControl={isRecording}
+                  mediaStream={stream}
+                  onUnavailable={() => setOrbUnavailable(true)}
+                />
+              )}
             </motion.button>
 
             {isRecording ? (

@@ -16,7 +16,8 @@
       "Pop-up messages now sit on their own card so they don't blend into the page"
     ],
     "fixes": [
-      "The \"Record a note\" button in the guest library now opens the recorder"
+      "The \"Record a note\" button in the guest library now opens the recorder",
+      "The record button now always appears — devices that can't show the animated orb get a simple mic button instead of a blank circle"
     ]
   },
   {
