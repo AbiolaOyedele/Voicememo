@@ -30,6 +30,12 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 export async function uploadRecording(
   recording: Recording,
   onProgress?: (value: number) => void,
+  /**
+   * Fires once the audio is safely stored server-side (before transcription).
+   * From that point an interrupted pipeline is recoverable via
+   * {@link resumeStuckDumps}, so callers holding a local copy can discard it.
+   */
+  onAudioStored?: (dumpId: string) => void,
 ): Promise<string> {
   onProgress?.(5)
   const { uploadUrl, dumpId } = await postJson<CreateUploadResponse>('/api/v1/upload', {
@@ -47,6 +53,7 @@ export async function uploadRecording(
   })
   if (!put.ok) throw new Error('Audio upload failed')
   onProgress?.(40)
+  onAudioStored?.(dumpId)
 
   await postJson('/api/v1/transcribe', { dumpId })
   onProgress?.(70)

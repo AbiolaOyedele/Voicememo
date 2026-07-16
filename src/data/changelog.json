@@ -17,6 +17,7 @@
     ],
     "fixes": [
       "The \"Record a note\" button in the guest library now opens the recorder",
+      "Guest notes now finish transcribing after you sign in — ideas no longer get stuck on \"Processing\"",
       "The record button now always appears — devices that can't show the animated orb get a simple mic button instead of a blank circle"
     ]
   },
