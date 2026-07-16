@@ -40,20 +40,20 @@ export function OrbFallback({ recording, elapsedSeconds, className }: OrbFallbac
       <div
         className={cn(
           'flex h-16 w-16 items-center justify-center rounded-xl transition-colors',
-          !recording && 'hover:bg-ink/10',
+          !recording && 'hover:bg-flame/10',
         )}
       >
         {recording ? (
-          <div className="bg-ink h-6 w-6 animate-spin rounded-sm" style={{ animationDuration: '3s' }} />
+          <div className="bg-flame h-6 w-6 animate-spin rounded-sm" style={{ animationDuration: '3s' }} />
         ) : (
-          <MicIcon size={24} className="text-ink/70" />
+          <MicIcon size={24} className="text-flame" />
         )}
       </div>
 
       <span
         className={cn(
           'font-mono text-sm transition-opacity duration-300',
-          recording ? 'text-ink/70' : 'text-ink/30',
+          recording ? 'text-flame' : 'text-flame/40',
         )}
       >
         {formatTime(elapsedSeconds)}
@@ -65,7 +65,7 @@ export function OrbFallback({ recording, elapsedSeconds, className }: OrbFallbac
             key={i}
             className={cn(
               'w-0.5 rounded-full transition-all duration-300',
-              recording ? 'bg-ink/50 animate-pulse' : 'bg-ink/10 h-1',
+              recording ? 'bg-flame animate-pulse' : 'bg-flame/25 h-1',
             )}
             style={
               recording && isClient
@@ -79,7 +79,7 @@ export function OrbFallback({ recording, elapsedSeconds, className }: OrbFallbac
         ))}
       </div>
 
-      <p className="text-ink/70 h-4 text-xs">{recording ? 'Listening...' : 'Tap to speak'}</p>
+      <p className="text-flame/80 h-4 text-xs">{recording ? 'Listening...' : 'Tap to speak'}</p>
     </div>
   )
 }
