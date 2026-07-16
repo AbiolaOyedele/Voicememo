@@ -279,7 +279,7 @@ export default function RecordPage() {
               className="relative h-64 w-64 overflow-hidden rounded-full disabled:opacity-70"
             >
               {orbUnavailable ? (
-                <OrbFallback recording={isRecording} />
+                <OrbFallback recording={isRecording} elapsedSeconds={elapsedSeconds} />
               ) : (
                 <VoicePoweredOrb
                   enableVoiceControl={isRecording}
@@ -289,7 +289,8 @@ export default function RecordPage() {
               )}
             </motion.button>
 
-            {isRecording ? (
+            {isRecording && !orbUnavailable ? (
+              // The fallback carries its own time readout — don't double it up.
               <Timer elapsedSeconds={elapsedSeconds} />
             ) : isBusy ? (
               <p className="text-muted flex items-center gap-2 text-sm">

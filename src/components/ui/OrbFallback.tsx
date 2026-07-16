@@ -1,80 +1,85 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { MicIcon } from './icons'
 
 interface OrbFallbackProps {
-  /** Recording state — switches the centre from a mic glyph to live-style bars. */
+  /** Recording state — swaps the mic for the spinner and animates the bars. */
   recording: boolean
+  /** Elapsed recording time, shown in the mono readout. */
+  elapsedSeconds: number
   className?: string
 }
 
-const BAR_COUNT = 21
+const VISUALIZER_BARS = 36
 
-/**
- * Deterministic per-bar animation shape so the equaliser looks organic without
- * Math.random() (which would differ between server and client renders). Bars
- * near the middle read taller, like a real voice level meter.
- */
-function barProfile(i: number): { peak: number; duration: number; delay: number } {
-  const centre = (BAR_COUNT - 1) / 2
-  const closeness = 1 - Math.abs(i - centre) / centre
-  const wobble = ((i * 7919) % 100) / 100
-  return {
-    peak: 0.35 + closeness * 0.5 + wobble * 0.15,
-    duration: 0.9 + wobble * 0.6,
-    delay: wobble * 0.4,
-  }
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
 /**
- * Non-WebGL stand-in for {@link VoicePoweredOrb}: a soft flame disc with a mic
- * glyph, swapping to an animated equaliser while recording. Purely visual —
- * recording state and tap handling stay with the parent button, exactly like
- * the orb it replaces.
+ * Non-WebGL stand-in for the voice orb, after the AI voice-input pattern: mic
+ * glyph, mono timer, a strip of thin visualizer bars, and a status caption.
+ * Purely visual — recording state, timing, and tap handling stay with the
+ * parent button, exactly like the orb it replaces.
  */
-export function OrbFallback({ recording, className }: OrbFallbackProps) {
+export function OrbFallback({ recording, elapsedSeconds, className }: OrbFallbackProps) {
+  // Bar heights are randomised per render; gate them to the client so the
+  // server and first client render agree (same guard as the source pattern).
+  const [isClient, setIsClient] = useState(false)
+  useEffect(() => setIsClient(true), [])
+
   return (
     <div
-      className={cn('relative flex h-full w-full items-center justify-center', className)}
+      className={cn('flex h-full w-full flex-col items-center justify-center gap-2', className)}
       aria-hidden
     >
-      {/* Soft glow disc that echoes the orb's flame rim on light and dark canvases. */}
-      <motion.div
-        className="absolute inset-3 rounded-full"
-        style={{
-          background:
-            'radial-gradient(circle at 50% 42%, rgba(255,215,189,0.9) 0%, rgba(255,154,92,0.55) 48%, rgba(255,79,3,0.35) 72%, transparent 100%)',
-        }}
-        animate={recording ? { scale: [1, 1.05, 1] } : { scale: 1 }}
-        transition={
-          recording ? { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }
-        }
-      />
-      <div className="border-flame/30 bg-canvas/70 absolute inset-10 rounded-full border backdrop-blur-sm" />
+      <div
+        className={cn(
+          'flex h-16 w-16 items-center justify-center rounded-xl transition-colors',
+          !recording && 'hover:bg-ink/10',
+        )}
+      >
+        {recording ? (
+          <div className="bg-ink h-6 w-6 animate-spin rounded-sm" style={{ animationDuration: '3s' }} />
+        ) : (
+          <MicIcon size={24} className="text-ink/70" />
+        )}
+      </div>
 
-      {recording ? (
-        <div className="relative flex h-16 items-center justify-center gap-1">
-          {Array.from({ length: BAR_COUNT }).map((_, i) => {
-            const { peak, duration, delay } = barProfile(i)
-            return (
-              <motion.span
-                key={i}
-                className="bg-flame w-1 rounded-full"
-                style={{ height: 56, originY: 0.5 }}
-                initial={{ scaleY: 0.15 }}
-                animate={{ scaleY: [0.15, peak, 0.25, peak * 0.7, 0.15] }}
-                transition={{ duration, delay, repeat: Infinity, ease: 'easeInOut' }}
-              />
-            )
-          })}
-        </div>
-      ) : (
-        <div className="text-flame relative flex flex-col items-center gap-2">
-          <MicIcon size={44} strokeWidth={1.6} />
-        </div>
-      )}
+      <span
+        className={cn(
+          'font-mono text-sm transition-opacity duration-300',
+          recording ? 'text-ink/70' : 'text-ink/30',
+        )}
+      >
+        {formatTime(elapsedSeconds)}
+      </span>
+
+      <div className="flex h-4 w-48 items-center justify-center gap-0.5">
+        {Array.from({ length: VISUALIZER_BARS }).map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              'w-0.5 rounded-full transition-all duration-300',
+              recording ? 'bg-ink/50 animate-pulse' : 'bg-ink/10 h-1',
+            )}
+            style={
+              recording && isClient
+                ? {
+                    height: `${20 + Math.random() * 80}%`,
+                    animationDelay: `${i * 0.05}s`,
+                  }
+                : undefined
+            }
+          />
+        ))}
+      </div>
+
+      <p className="text-ink/70 h-4 text-xs">{recording ? 'Listening...' : 'Tap to speak'}</p>
     </div>
   )
 }
