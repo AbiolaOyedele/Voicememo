@@ -33,51 +33,63 @@ export function TabBar() {
   const carousel = useTabCarousel()
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1.75rem)]">
-      <motion.nav
-        initial={{ y: 24, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-        aria-label="Primary"
-        className="border-ink/10 bg-canvas pointer-events-auto flex items-center gap-1 rounded-full border p-1.5"
-      >
-        {TABS.map(({ href, label, Icon }) => {
-          const active = carousel
-            ? carousel.activeHref === href
-            : pathname === href || pathname.startsWith(`${href}/`)
-          return (
-            <motion.button
-              key={href}
-              type="button"
-              onClick={() => (carousel ? carousel.goToTab(href) : router.push(href))}
-              whileTap={{ scale: 0.96 }}
-              aria-label={label}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'relative flex h-11 min-w-11 items-center justify-center rounded-full px-3 transition-colors',
-                active ? 'bg-flame/12 text-flame' : 'text-muted hover:bg-ink/5',
-              )}
-            >
-              <Icon size={22} />
-              <motion.span
-                initial={false}
-                animate={{
-                  width: active ? 'auto' : 0,
-                  opacity: active ? 1 : 0,
-                  marginLeft: active ? 8 : 0,
-                }}
-                transition={{
-                  width: { type: 'spring', stiffness: 350, damping: 32 },
-                  opacity: { duration: 0.18 },
-                }}
-                className="overflow-hidden text-sm whitespace-nowrap"
+    <>
+      {/* Fade the page out behind the floating nav so scrolling text never
+          collides with it visually. Sits under the nav, above content. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-[calc(env(safe-area-inset-bottom)+8.5rem)]"
+        style={{
+          background:
+            'linear-gradient(to top, var(--color-canvas) 0%, var(--color-canvas) 35%, transparent 100%)',
+        }}
+      />
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1.75rem)]">
+        <motion.nav
+          initial={{ y: 24, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+          aria-label="Primary"
+          className="border-ink/10 bg-canvas pointer-events-auto flex items-center gap-1 rounded-full border p-1.5"
+        >
+          {TABS.map(({ href, label, Icon }) => {
+            const active = carousel
+              ? carousel.activeHref === href
+              : pathname === href || pathname.startsWith(`${href}/`)
+            return (
+              <motion.button
+                key={href}
+                type="button"
+                onClick={() => (carousel ? carousel.goToTab(href) : router.push(href))}
+                whileTap={{ scale: 0.96 }}
+                aria-label={label}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'relative flex h-11 min-w-11 items-center justify-center rounded-full px-3 transition-colors',
+                  active ? 'bg-flame/12 text-flame' : 'text-muted hover:bg-ink/5',
+                )}
               >
-                {label}
-              </motion.span>
-            </motion.button>
-          )
-        })}
-      </motion.nav>
-    </div>
+                <Icon size={22} />
+                <motion.span
+                  initial={false}
+                  animate={{
+                    width: active ? 'auto' : 0,
+                    opacity: active ? 1 : 0,
+                    marginLeft: active ? 8 : 0,
+                  }}
+                  transition={{
+                    width: { type: 'spring', stiffness: 350, damping: 32 },
+                    opacity: { duration: 0.18 },
+                  }}
+                  className="overflow-hidden text-sm whitespace-nowrap"
+                >
+                  {label}
+                </motion.span>
+              </motion.button>
+            )
+          })}
+        </motion.nav>
+      </div>
+    </>
   )
 }
