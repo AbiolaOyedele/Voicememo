@@ -1,5 +1,22 @@
 [
   {
+    "version": "1.2.0",
+    "date": "16 July 2026",
+    "title": "Make ideas your own",
+    "highlight": "You can now rename ideas, edit their tags, and share them straight to other apps.",
+    "features": [
+      "Rename any idea — tap the pencil next to its title",
+      "Edit an idea's tags — add your own or remove the ones that don't fit",
+      "Share an idea straight to another app with the new Share button"
+    ],
+    "improvements": [
+      "Ideas that fail to process now explain what happened instead of showing an empty page",
+      "Every idea now shows its word count",
+      "Clear your search and tag filters in one tap when nothing matches"
+    ],
+    "fixes": []
+  },
+  {
     "version": "1.1.0",
     "date": "14 July 2026",
     "title": "Reminders",

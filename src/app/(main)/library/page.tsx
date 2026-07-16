@@ -129,7 +129,25 @@ function SignedInLibrary() {
         ) : dumps.length === 0 ? (
           <EmptyState />
         ) : filtered.length === 0 ? (
-          <p className="text-muted py-16 text-center text-sm">No ideas match your search.</p>
+          <div className="flex flex-col items-center gap-3 py-16 text-center">
+            <p className="text-muted text-sm">
+              {activeTag && query.trim()
+                ? 'No ideas match your search and tag filter.'
+                : activeTag
+                  ? `No ideas tagged “${activeTag}”.`
+                  : 'No ideas match your search.'}
+            </p>
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => {
+                setQuery('')
+                setActiveTag(null)
+              }}
+            >
+              Clear filters
+            </Button>
+          </div>
         ) : (
           <DumpList dumps={filtered} onTogglePin={togglePin} />
         )}
