@@ -44,6 +44,23 @@ export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startedAtRef = useRef<number>(0)
   const mimeRef = useRef<string>('')
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null)
+
+  // Keep the screen awake while recording — a screen timeout would background
+  // the page and iOS suspends MediaRecorder there, killing the take. Best
+  // effort: unsupported browsers just keep their normal timeout behaviour.
+  const acquireWakeLock = useCallback(async () => {
+    try {
+      wakeLockRef.current = (await navigator.wakeLock?.request('screen')) ?? null
+    } catch {
+      // Low battery or unsupported — recording still works, screen may sleep.
+    }
+  }, [])
+
+  const releaseWakeLock = useCallback(() => {
+    void wakeLockRef.current?.release().catch(() => {})
+    wakeLockRef.current = null
+  }, [])
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -126,6 +143,7 @@ export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): 
       const type = mimeRef.current || 'audio/webm'
       const blob = new Blob(chunksRef.current, { type })
       detachStream()
+      releaseWakeLock()
       setRecording({ blob, mimeType: type, durationSeconds })
       setState('stopped')
     }
@@ -133,6 +151,7 @@ export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): 
     startedAtRef.current = Date.now()
     recorder.start()
     setState('recording')
+    void acquireWakeLock()
 
     clearTimer()
     timerRef.current = setInterval(() => {
@@ -143,26 +162,41 @@ export function useRecorder(maxDurationSeconds: number = MAX_DURATION_SECONDS): 
         stop()
       }
     }, 250)
-  }, [clearTimer, stop, detachStream, maxDurationSeconds])
+  }, [clearTimer, stop, detachStream, maxDurationSeconds, acquireWakeLock, releaseWakeLock])
+
+  // The browser drops the wake lock whenever the page is backgrounded; take it
+  // back the moment the user returns mid-recording.
+  useEffect(() => {
+    if (state !== 'recording') return
+    const onVisible = (): void => {
+      if (document.visibilityState === 'visible' && !wakeLockRef.current) {
+        void acquireWakeLock()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [state, acquireWakeLock])
 
   const reset = useCallback(() => {
     clearTimer()
     detachStream()
+    releaseWakeLock()
     recorderRef.current = null
     chunksRef.current = []
     setElapsedSeconds(0)
     setError(null)
     setRecording(null)
     setState('idle')
-  }, [clearTimer, detachStream])
+  }, [clearTimer, detachStream, releaseWakeLock])
 
   // Cleanup on unmount.
   useEffect(() => {
     return () => {
       clearTimer()
       detachStream()
+      releaseWakeLock()
     }
-  }, [clearTimer, detachStream])
+  }, [clearTimer, detachStream, releaseWakeLock])
 
   return { state, elapsedSeconds, error, recording, stream, start, stop, reset }
 }

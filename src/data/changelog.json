@@ -1,7 +1,7 @@
 [
   {
     "version": "1.2.0",
-    "date": "16 July 2026",
+    "date": "17 July 2026",
     "title": "Make ideas your own",
     "highlight": "You can now rename ideas, edit their tags, and share them straight to other apps.",
     "features": [
@@ -12,6 +12,8 @@
       "Share an idea straight to another app with the new Share button"
     ],
     "improvements": [
+      "Your screen stays awake while you're recording, so long takes don't get cut off by the screen timeout",
+      "Minor UI tweaks — a highlighted feedback row, a simpler share popup, and clearer labels",
       "The bottom bar on an idea now has back, Idea, and Action plan — swipe or tap between them, just like the home tabs",
       "Reminders on an idea are now highlighted so they're impossible to miss",
       "Share, copy, and download are now one tidy Share & export popup",

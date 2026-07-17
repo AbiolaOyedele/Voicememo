@@ -380,7 +380,7 @@ function IdeaPanel({
 }
 
 const DETAIL_TABS = [
-  { label: 'Idea', Icon: FileTextIcon },
+  { label: 'Thoughts', Icon: FileTextIcon },
   { label: 'Action plan', Icon: ListChecksIcon },
 ] as const
 
@@ -414,7 +414,7 @@ function DetailNav({
           initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-          aria-label="Idea sections"
+          aria-label="Thought sections"
           className="border-ink/10 bg-canvas pointer-events-auto flex items-center gap-1 rounded-full border p-1.5"
         >
           <motion.button

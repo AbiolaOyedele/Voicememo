@@ -2,14 +2,13 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Dump } from '@/types/dump'
-import { downloadTextFile, dumpFilename, dumpToMarkdown, dumpToPlainText } from '@/lib/export'
+import { dumpToMarkdown, dumpToPlainText } from '@/lib/export'
 import { CenterDialog } from '@/components/ui/CenterDialog'
 import { ShareIcon } from '@/components/ui/icons'
 
 /**
  * One "Share & export" button that opens a popup with every way out of the
- * app: native share (where supported), copy, markdown/text downloads, and
- * print-to-PDF. Replaces the old row of five loose buttons.
+ * app: native share (where supported), copy, and print-to-PDF.
  */
 export function ExportActions({ dump }: { dump: Dump }) {
   const [open, setOpen] = useState(false)
@@ -66,22 +65,6 @@ export function ExportActions({ dump }: { dump: Dump }) {
           ) : null}
           <ExportRow onClick={() => void copy()} hint="Formatted as markdown">
             {copied ? 'Copied ✓' : 'Copy text'}
-          </ExportRow>
-          <ExportRow
-            onClick={() =>
-              downloadTextFile(dumpFilename(dump, 'md'), dumpToMarkdown(dump), 'text/markdown')
-            }
-            hint=".md file"
-          >
-            Download Markdown
-          </ExportRow>
-          <ExportRow
-            onClick={() =>
-              downloadTextFile(dumpFilename(dump, 'txt'), dumpToPlainText(dump), 'text/plain')
-            }
-            hint=".txt file"
-          >
-            Download Text
           </ExportRow>
           <ExportRow onClick={printPdf} hint="Via your print dialog">
             Save as PDF
