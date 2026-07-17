@@ -30,6 +30,10 @@ interface PushPayload {
   title?: string
   body?: string
   url?: string
+  /** Same tag replaces the previous notification instead of stacking. */
+  tag?: string
+  /** With `tag`: re-alert (sound/vibration) on replace — used by persistent reminders. */
+  renotify?: boolean
 }
 
 // Show a notification when a push arrives. Payload is the JSON the server sends
@@ -43,10 +47,11 @@ self.addEventListener('push', (event) => {
   }
 
   const title = payload.title || 'Dumpty'
-  const options: NotificationOptions = {
+  const options: NotificationOptions & { renotify?: boolean } = {
     body: payload.body || '',
     icon: '/icons/icon-192.png',
     data: { url: payload.url || '/' },
+    ...(payload.tag ? { tag: payload.tag, renotify: payload.renotify ?? false } : {}),
   }
   event.waitUntil(self.registration.showNotification(title, options))
 })

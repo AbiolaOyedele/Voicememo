@@ -119,3 +119,42 @@ export async function cancelReminder(
     throw new AppError(500, 'We could not cancel that reminder.', 'DB_CANCEL_REMINDER_FAILED', error)
   }
 }
+
+/** All pending reminders for a dump the user owns, soonest first. */
+export async function listPendingRemindersForDump(
+  supabase: SupabaseClient,
+  userId: string,
+  dumpId: string,
+): Promise<Reminder[]> {
+  const { data, error } = await supabase
+    .from(REMINDERS_TABLE)
+    .select()
+    .eq('dump_id', dumpId)
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .order('remind_at', { ascending: true })
+
+  if (error) {
+    throw new AppError(500, 'We could not load reminders.', 'DB_LIST_REMINDERS_FAILED', error)
+  }
+  return (data as Reminder[]) ?? []
+}
+
+/** Fetch one reminder by id that the user owns, or null. */
+export async function getReminderById(
+  supabase: SupabaseClient,
+  userId: string,
+  id: string,
+): Promise<Reminder | null> {
+  const { data, error } = await supabase
+    .from(REMINDERS_TABLE)
+    .select()
+    .eq('id', id)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) {
+    throw new AppError(500, 'We could not load that reminder.', 'DB_GET_REMINDER_FAILED', error)
+  }
+  return (data as Reminder) ?? null
+}

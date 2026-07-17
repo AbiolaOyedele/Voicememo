@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.3.0",
+    "date": "17 July 2026",
+    "title": "Reminders, your way",
+    "highlight": "Set your own reminders on any idea — up to two — and turn on persistent reminders that ring until you notice.",
+    "features": [
+      "Set reminders yourself — pick a day and time on any idea, up to two at once",
+      "Persistent reminders — an optional setting that makes a due reminder ring about 10 times so you can't miss it"
+    ],
+    "improvements": ["The feedback row in Account is now flame-coloured text (no background)"],
+    "fixes": []
+  },
+  {
     "version": "1.2.0",
     "date": "17 July 2026",
     "title": "Make ideas your own",

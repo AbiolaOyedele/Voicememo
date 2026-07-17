@@ -5,6 +5,7 @@ import { ExportDataButton } from '@/components/features/account/ExportDataButton
 import { DeleteAccountButton } from '@/components/features/account/DeleteAccountButton'
 import { FeedbackButton } from '@/components/features/account/FeedbackButton'
 import { NotificationsToggle } from '@/components/features/account/NotificationsToggle'
+import { PersistentRemindersToggle } from '@/components/features/account/PersistentRemindersToggle'
 import { AdminLinkRow } from '@/components/features/account/AdminLinkRow'
 import { ChangelogSection } from '@/components/features/account/ChangelogSection'
 import { ComingSoonSection } from '@/components/features/account/ComingSoonSection'
@@ -73,6 +74,7 @@ export default async function AccountPage() {
           <ul className="rounded-card divide-ink/10 border-ink/10 divide-y border">
             <ExportDataButton />
             <NotificationsToggle />
+            <PersistentRemindersToggle />
             <AdminLinkRow />
             <FeedbackButton />
             <DeleteAccountButton />

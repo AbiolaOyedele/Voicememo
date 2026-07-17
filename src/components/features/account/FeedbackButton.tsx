@@ -67,8 +67,8 @@ export function FeedbackButton() {
 
   return (
     <>
-      {/* Highlighted in flame so feedback stands out from the other rows. */}
-      <li className="bg-flame/[0.07]">
+      {/* Flame-coloured text so feedback stands out from the other rows. */}
+      <li>
         <button
           type="button"
           onClick={() => setOpen(true)}

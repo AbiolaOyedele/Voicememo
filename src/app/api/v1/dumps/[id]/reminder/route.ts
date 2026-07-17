@@ -1,18 +1,46 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { requireUser } from '@/middleware/auth'
-import { cancelReminderForDump, getReminderForUser } from '@/services/reminders.service'
+import { enforceRateLimit, RATE_LIMITS } from '@/middleware/rate-limit'
+import {
+  cancelReminderById,
+  createUserReminder,
+  listRemindersForUser,
+} from '@/services/reminders.service'
 import { jsonOk, toErrorResponse } from '@/lib/http'
+import { AppError } from '@/lib/errors'
 
 type Ctx = { params: Promise<{ id: string }> }
 
 // GET /api/v1/dumps/[id]/reminder
-// Auth: required — Returns: { id, remind_at, message, status } | null
+// Auth: required — Returns: ReminderSummary[] (pending only, soonest first)
 export async function GET(_req: NextRequest, { params }: Ctx): Promise<NextResponse> {
   try {
     const { id } = await params
     const { supabase, user } = await requireUser()
-    const reminder = await getReminderForUser(supabase, user.id, id)
-    if (!reminder) return jsonOk(null)
+    const reminders = await listRemindersForUser(supabase, user.id, id)
+    return jsonOk(
+      reminders.map((r) => ({
+        id: r.id,
+        remind_at: r.remind_at,
+        message: r.message,
+        status: r.status,
+      })),
+    )
+  } catch (error) {
+    return toErrorResponse(error)
+  }
+}
+
+// POST /api/v1/dumps/[id]/reminder
+// Auth: required — Body: { remind_at: ISO string, message? }
+// Creates a user-set reminder (max 2 pending per idea). Returns: ReminderSummary
+export async function POST(req: NextRequest, { params }: Ctx): Promise<NextResponse> {
+  try {
+    const { id } = await params
+    const { supabase, user } = await requireUser()
+    enforceRateLimit(`${user.id}:reminder-create`, RATE_LIMITS.paid)
+    const body: unknown = await req.json().catch(() => ({}))
+    const reminder = await createUserReminder(supabase, user.id, id, body)
     return jsonOk({
       id: reminder.id,
       remind_at: reminder.remind_at,
@@ -24,13 +52,17 @@ export async function GET(_req: NextRequest, { params }: Ctx): Promise<NextRespo
   }
 }
 
-// DELETE /api/v1/dumps/[id]/reminder
-// Auth: required — Cancels the dump's pending reminder. Returns: { success: true }
-export async function DELETE(_req: NextRequest, { params }: Ctx): Promise<NextResponse> {
+// DELETE /api/v1/dumps/[id]/reminder?reminderId=<uuid>
+// Auth: required — Cancels one pending reminder. Returns: { success: true }
+export async function DELETE(req: NextRequest, { params }: Ctx): Promise<NextResponse> {
   try {
-    const { id } = await params
+    await params
     const { supabase, user } = await requireUser()
-    await cancelReminderForDump(supabase, user.id, id)
+    const reminderId = req.nextUrl.searchParams.get('reminderId')
+    if (!reminderId) {
+      throw new AppError(422, 'Say which reminder to cancel.', 'REMINDER_CANCEL_INVALID')
+    }
+    await cancelReminderById(supabase, user.id, reminderId)
     return jsonOk({ success: true })
   } catch (error) {
     return toErrorResponse(error)

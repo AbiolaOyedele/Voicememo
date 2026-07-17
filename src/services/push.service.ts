@@ -150,6 +150,10 @@ export interface PushPayload {
   title: string
   body: string
   url: string
+  /** Same tag replaces (not stacks) the previous notification. */
+  tag?: string
+  /** With `tag`: re-alert (sound/vibration) on replace — the alarm effect. */
+  renotify?: boolean
 }
 
 /**
