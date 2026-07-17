@@ -46,6 +46,38 @@ export interface DumpStats {
   actionPlanCount: number
 }
 
+/** One day in the growth chart series (zero-filled, oldest first). */
+export interface DailyStat {
+  day: string
+  signups: number
+  visitors: number
+  recordings: number
+}
+
+/** Lifetime dump totals for the dashboard, including total recorded audio. */
+export interface DumpTotals {
+  total: number
+  totalSeconds: number
+  ready: number
+  failed: number
+  inFlight: number
+  transcribed: number
+  actionPlans: number
+}
+
+/** Lifetime usage for one account — most active users first. */
+export interface UserAnalyticsRow {
+  id: string
+  email: string | null
+  signedUpAt: string
+  ideas: number
+  totalSeconds: number
+  transcribed: number
+  actionPlans: number
+  failed: number
+  lastRecordingAt: string | null
+}
+
 /** Everything the dashboard overview renders. */
 export interface AdminDashboardData {
   users: AdminUserStats

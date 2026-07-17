@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Dump } from '@/types/dump'
 import { clearDumpsCache, readDumpsCache, writeDumpsCache } from '@/lib/dumps-cache'
+import { resumeStuckDumps } from '@/lib/dump-recovery'
 
 interface UseDumps {
   dumps: Dump[]
@@ -46,6 +47,12 @@ export function useDumps(): UseDumps {
         throw new Error(json?.error?.message ?? 'Failed to load')
       }
       setDumps(json.data)
+      // Heal dumps stranded mid-pipeline (e.g. an interrupted guest-note
+      // migration). When anything was resumed, the listener below refetches;
+      // resumeStuckDumps attempts each dump once per session, so no loop.
+      void resumeStuckDumps(json.data).then((changed) => {
+        if (changed) window.dispatchEvent(new Event('dumpty:dumps-updated'))
+      })
     } catch {
       // Keep any cached list on screen; only surface an error with nothing to show.
       if (readDumpsCache().length === 0) setError('We could not load your library. Try again.')

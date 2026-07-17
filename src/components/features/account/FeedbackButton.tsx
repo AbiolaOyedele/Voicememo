@@ -67,14 +67,15 @@ export function FeedbackButton() {
 
   return (
     <>
-      <li>
+      {/* Highlighted in flame so feedback stands out from the other rows. */}
+      <li className="bg-flame/[0.07]">
         <button
           type="button"
           onClick={() => setOpen(true)}
           className="flex min-h-11 w-full items-center justify-between px-4 py-3.5 text-left"
         >
-          <span className="text-[15px]">Give feedback</span>
-          <span className="text-muted text-xs">Bug, idea, anything</span>
+          <span className="text-flame text-[15px] font-medium">Give feedback</span>
+          <span className="text-flame/70 text-xs">Bug, idea, anything</span>
         </button>
       </li>
 
@@ -133,7 +134,7 @@ export function FeedbackButton() {
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="What's on your mind?"
                     rows={4}
-                    className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink mt-3 w-full resize-none border bg-transparent p-3 text-[15px] outline-none"
+                    className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink mt-3 w-full resize-none border bg-transparent p-3 text-base outline-none"
                   />
 
                   {status === 'error' ? (

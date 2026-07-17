@@ -55,12 +55,14 @@ export function ReminderSection({ dumpId }: { dumpId: string }) {
   if (loading || !reminder || reminder.status !== 'pending') return null
 
   return (
-    <div data-no-print className="border-ink/10 flex flex-col gap-2 border-t pt-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2 text-[15px]">
-          <BellIcon size={18} className="text-muted shrink-0" />
+    <div data-no-print className="flex flex-col gap-2">
+      {/* Highlighted so an armed reminder is impossible to miss on the page. */}
+      <div className="rounded-btn border-flame/25 bg-flame/[0.08] flex min-h-12 flex-wrap items-center justify-between gap-2 border px-4 py-2">
+        <div className="flex min-w-0 items-center gap-2.5 text-[15px]">
+          <BellIcon size={18} className="text-flame shrink-0" />
           <span>
-            Reminder set for {formatDayLabel(reminder.remind_at)}, {formatTime(reminder.remind_at)}
+            <span className="text-flame font-medium">Reminder</span> ·{' '}
+            {formatDayLabel(reminder.remind_at)}, {formatTime(reminder.remind_at)}
           </span>
         </div>
         <button

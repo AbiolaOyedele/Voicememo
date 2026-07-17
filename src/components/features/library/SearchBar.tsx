@@ -19,7 +19,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search your ideas"
         aria-label="Search your ideas"
-        className="placeholder:text-muted h-11 w-full bg-transparent text-[15px] outline-none"
+        className="placeholder:text-muted h-11 w-full bg-transparent text-base outline-none"
       />
       {value ? (
         <button

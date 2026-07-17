@@ -63,7 +63,7 @@ export function PushBroadcaster({ subscriberCount }: { subscriberCount: number }
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Title"
           maxLength={80}
-          className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink w-full border bg-transparent p-3 text-[15px] outline-none"
+          className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink w-full border bg-transparent p-3 text-base outline-none"
         />
         <textarea
           value={body}
@@ -71,14 +71,14 @@ export function PushBroadcaster({ subscriberCount }: { subscriberCount: number }
           placeholder="Message"
           rows={3}
           maxLength={300}
-          className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink w-full resize-none border bg-transparent p-3 text-[15px] outline-none"
+          className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink w-full resize-none border bg-transparent p-3 text-base outline-none"
         />
         <input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Link when tapped (optional, e.g. /library)"
           maxLength={2000}
-          className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink w-full border bg-transparent p-3 text-[15px] outline-none"
+          className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink w-full border bg-transparent p-3 text-base outline-none"
         />
 
         {status === 'sent' && result ? (

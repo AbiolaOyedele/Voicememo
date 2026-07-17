@@ -1,5 +1,35 @@
 [
   {
+    "version": "1.2.0",
+    "date": "17 July 2026",
+    "title": "Make ideas your own",
+    "highlight": "You can now rename ideas, edit their tags, and share them straight to other apps.",
+    "features": [
+      "Action plans now live on their own page — swipe left on an idea (or tap Action plan in the bottom bar) and Dumpty drafts the plan right there",
+      "Messages from the team — replies to your feedback now show up in your Account tab",
+      "Rename any idea — tap the pencil next to its title",
+      "Edit an idea's tags — add your own or remove the ones that don't fit",
+      "Share an idea straight to another app with the new Share button"
+    ],
+    "improvements": [
+      "Your screen stays awake while you're recording, so long takes don't get cut off by the screen timeout",
+      "Minor UI tweaks — a highlighted feedback row, a simpler share popup, and clearer labels",
+      "The bottom bar on an idea now has back, Idea, and Action plan — swipe or tap between them, just like the home tabs",
+      "Reminders on an idea are now highlighted so they're impossible to miss",
+      "Share, copy, and download are now one tidy Share & export popup",
+      "Ideas that fail to process now explain what happened instead of showing an empty page",
+      "Every idea now shows its word count",
+      "Clear your search and tag filters in one tap when nothing matches",
+      "Pop-up messages now sit on their own card so they don't blend into the page"
+    ],
+    "fixes": [
+      "The page no longer zooms in when you tap into search or checklist fields on iPhone",
+      "The \"Record a note\" button in the guest library now opens the recorder",
+      "Guest notes now finish transcribing after you sign in — ideas no longer get stuck on \"Processing\"",
+      "The record button now always appears — devices that can't show the animated orb get a simple mic button instead of a blank circle"
+    ]
+  },
+  {
     "version": "1.1.0",
     "date": "14 July 2026",
     "title": "Reminders",
@@ -17,17 +47,13 @@
     "version": "1.0.1",
     "date": "13 July 2026",
     "title": "Polish and fixes",
-    "features": [
-      "Coming soon — peek at the features we're building next, from the Account tab"
-    ],
+    "features": ["Coming soon — peek at the features we're building next, from the Account tab"],
     "improvements": [
       "Smoother, iPhone-style swiping between tabs",
       "Your ideas now open instantly from the library",
       "Smarter, more consistent tags on every idea"
     ],
-    "fixes": [
-      "Sending feedback now works reliably"
-    ]
+    "fixes": ["Sending feedback now works reliably"]
   },
   {
     "version": "1.0.0",

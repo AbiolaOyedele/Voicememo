@@ -108,7 +108,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 aria-label="Email address"
-                className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink h-11 w-full border bg-transparent px-4 text-[15px] outline-none"
+                className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink h-11 w-full border bg-transparent px-4 text-base outline-none"
               />
               <motion.button
                 type="submit"

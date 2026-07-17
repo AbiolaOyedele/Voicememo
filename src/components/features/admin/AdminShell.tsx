@@ -102,6 +102,16 @@ export function AdminShell() {
         ))}
       </div>
 
+      {/* Fade content out behind the floating nav — same treatment as the app's TabBar. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[calc(env(safe-area-inset-bottom)+8.5rem)]"
+        style={{
+          background:
+            'linear-gradient(to top, var(--color-canvas) 0%, var(--color-canvas) 35%, transparent 100%)',
+        }}
+      />
+
       {/* Floating pill nav — mirrors the app's TabBar */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+1.75rem)]">
         <nav

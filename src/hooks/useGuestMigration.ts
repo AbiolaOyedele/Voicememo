@@ -31,14 +31,23 @@ export function useGuestMigration(): void {
       for (const dump of dumps) {
         if (cancelled) return
         try {
-          await uploadRecording({
-            blob: dump.blob,
-            mimeType: dump.mimeType,
-            durationSeconds: dump.durationSeconds,
-          })
-          await deleteGuestDump(dump.id)
+          await uploadRecording(
+            {
+              blob: dump.blob,
+              mimeType: dump.mimeType,
+              durationSeconds: dump.durationSeconds,
+            },
+            undefined,
+            // Delete the local copy the moment the audio is stored server-side
+            // — not after the whole pipeline. If transcription/processing is
+            // interrupted here (page unload, one failed request), the library's
+            // recovery sweep resumes it server-side; deleting late would make
+            // the next session re-upload the same audio as a duplicate idea.
+            () => void deleteGuestDump(dump.id),
+          )
         } catch {
-          // Leave this note in local storage; it will retry next session.
+          // If the audio never made it up, the note is still in local storage
+          // and retries next session. If it did, the recovery sweep takes over.
         }
       }
 

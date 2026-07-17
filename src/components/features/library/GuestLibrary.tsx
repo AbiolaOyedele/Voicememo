@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { listGuestDumps, deleteGuestDump, type GuestDump } from '@/lib/guest'
 import { Reveal } from '@/components/ui/Reveal'
 import { useRegisterRefresh } from '@/hooks/useRefreshControl'
+import { useTabNav } from '@/hooks/useTabCarousel'
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -59,6 +60,7 @@ function GuestNote({
  * populated states.
  */
 export function GuestLibrary() {
+  const goToTab = useTabNav()
   const [dumps, setDumps] = useState<GuestDump[] | null>(null)
 
   const load = useCallback(async () => {
@@ -132,12 +134,13 @@ export function GuestLibrary() {
             <p className="text-muted max-w-xs text-sm">
               Tap Record to capture your first note. It stays private on this device.
             </p>
-            <Link
-              href="/record"
+            <button
+              type="button"
+              onClick={() => goToTab('/record')}
               className="rounded-btn bg-flame mt-2 inline-flex h-11 items-center px-5 text-white"
             >
               Record a note
-            </Link>
+            </button>
           </motion.div>
         ) : (
           <ul className="flex flex-col gap-2">

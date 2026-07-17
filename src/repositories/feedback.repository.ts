@@ -27,8 +27,13 @@ interface FeedbackRow {
   page_url: string | null
   app_version: string | null
   status: FeedbackRecord['status']
+  response: string | null
+  resolved_at: string | null
   created_at: string
 }
+
+const FEEDBACK_COLUMNS =
+  'id, user_id, type, message, page_url, app_version, status, response, resolved_at, created_at'
 
 function toRecord(row: FeedbackRow): FeedbackRecord {
   return {
@@ -39,6 +44,8 @@ function toRecord(row: FeedbackRow): FeedbackRecord {
     pageUrl: row.page_url,
     appVersion: row.app_version,
     status: row.status,
+    response: row.response,
+    resolvedAt: row.resolved_at,
     createdAt: row.created_at,
   }
 }
@@ -68,7 +75,7 @@ export async function listRecentFeedback(
 ): Promise<FeedbackRecord[]> {
   const { data, error } = await admin
     .from(FEEDBACK_TABLE)
-    .select('id, user_id, type, message, page_url, app_version, status, created_at')
+    .select(FEEDBACK_COLUMNS)
     .order('created_at', { ascending: false })
     .limit(limit)
   if (error) {
@@ -86,4 +93,28 @@ export async function countFeedback(admin: SupabaseClient): Promise<number> {
     throw new AppError(502, 'Could not count feedback.', 'DB_FEEDBACK_COUNT_FAILED', error)
   }
   return count ?? 0
+}
+
+export interface UpdateFeedbackPatch {
+  status?: FeedbackRecord['status']
+  response?: string
+  resolved_at?: string | null
+}
+
+/** Update a feedback row (status/response). Service-role client only. */
+export async function updateFeedback(
+  admin: SupabaseClient,
+  id: string,
+  patch: UpdateFeedbackPatch,
+): Promise<FeedbackRecord> {
+  const { data, error } = await admin
+    .from(FEEDBACK_TABLE)
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select(FEEDBACK_COLUMNS)
+    .single()
+  if (error || !data) {
+    throw new AppError(502, 'Could not update feedback.', 'DB_FEEDBACK_UPDATE_FAILED', error)
+  }
+  return toRecord(data as FeedbackRow)
 }
