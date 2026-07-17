@@ -39,6 +39,10 @@ export function DumpCard({ dump, onTogglePin, index = 0 }: DumpCardProps) {
     >
       <Link
         href={`/library/${dump.id}`}
+        // Full prefetch (dynamic routes default to partial): the route payload
+        // is fetched while the card is on screen, so tapping paints instantly
+        // from the client cache with no server round-trip in the way.
+        prefetch={true}
         className="rounded-card border-ink/10 bg-canvas flex flex-col gap-2 border p-4"
       >
         <div className="text-muted flex items-center justify-between text-xs">
