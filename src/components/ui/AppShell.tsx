@@ -24,6 +24,12 @@ function isTabRoute(pathname: string): boolean {
   return TABS.some((t) => t.href === pathname)
 }
 
+/** Dump detail routes own their whole viewport: an Idea ↔ Action-plan swipe
+ * pair with its own bottom nav, so the shell adds no wrapper or TabBar. */
+function isDumpDetailRoute(pathname: string): boolean {
+  return /^\/library\/[^/]+$/.test(pathname)
+}
+
 /**
  * Client shell for the main app. On a tab route it renders the swipe carousel
  * (all three tabs mounted in a native scroll-snap track — see SwipeCarousel);
@@ -60,6 +66,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           // The carousel renders its own TabBar inside its context so the active
           // tab follows the swipe.
           <SwipeCarousel initialHref={pathname} disabled={refreshDisabled} />
+        ) : isDumpDetailRoute(pathname) ? (
+          children
         ) : (
           <>
             <div className="h-[100dvh]">

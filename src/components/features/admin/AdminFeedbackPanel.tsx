@@ -179,7 +179,7 @@ function FeedbackItem({
                       ? 'Write a reply — it appears in their Account tab.'
                       : 'Guest feedback — a reply is stored but cannot be delivered.'
                   }
-                  className="border-ink/15 focus:border-ink placeholder:text-muted mt-2 w-full rounded-lg border bg-transparent p-3 text-sm outline-none"
+                  className="border-ink/15 focus:border-ink placeholder:text-muted mt-2 w-full rounded-lg border bg-transparent p-3 text-base outline-none"
                 />
                 <div className="mt-1 flex gap-2">
                   <button

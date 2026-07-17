@@ -133,7 +133,7 @@ export function FeedbackButton() {
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="What's on your mind?"
                     rows={4}
-                    className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink mt-3 w-full resize-none border bg-transparent p-3 text-[15px] outline-none"
+                    className="rounded-btn border-ink/15 placeholder:text-muted focus:border-ink mt-3 w-full resize-none border bg-transparent p-3 text-base outline-none"
                   />
 
                   {status === 'error' ? (
